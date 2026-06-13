@@ -36,7 +36,7 @@ export function analyze(
   landmarks: Landmark[],
   handedness: "Left" | "Right" | "Unknown",
   opts?: { image?: string; saveImage?: boolean }
-): Promise<{ scanId: string; result: AnalysisResult }> {
+): Promise<{ scanId?: string; result?: AnalysisResult; notPalm?: boolean; message?: string }> {
   return postJSON("/api/analyze", {
     landmarks,
     handedness,

@@ -35,7 +35,10 @@ const ReportSectionSchema = z.object({
 });
 
 const VisionResultSchema = z.object({
-  handDetected: z.boolean(),
+  // true ONLY when the image clearly shows a human palm with readable lines.
+  isPalm: z.boolean(),
+  // when isPalm is false, a short friendly reason to show the user; else "".
+  reason: z.string(),
   lines: z.array(LineReadingSchema),
   report: z
     .object({
@@ -73,10 +76,11 @@ function jsonSchema(includeReport: boolean) {
     required: ["title", "body"],
   };
   const properties: Record<string, unknown> = {
-    handDetected: { type: "boolean" },
+    isPalm: { type: "boolean", description: "true ONLY if the image clearly shows a human palm with visible palm lines" },
+    reason: { type: "string", description: "if isPalm is false, a short friendly reason for the user; otherwise an empty string" },
     lines: { type: "array", items: lineItem },
   };
-  const required = ["handDetected", "lines"];
+  const required = ["isPalm", "reason", "lines"];
   if (includeReport) {
     properties.report = {
       type: "object",
@@ -89,20 +93,24 @@ function jsonSchema(includeReport: boolean) {
   return { type: "object", additionalProperties: false, properties, required };
 }
 
-const SYSTEM = `You are an expert palmist for "PalmInsight", an entertainment palm-reading app for a Gen-Z audience.
-A human hand has ALREADY been detected in this photo by a separate computer-vision system, so a palm IS present — your job is to read it, not to second-guess whether it is a hand.
-Read the ACTUAL lines visible in THIS image — their length, depth, curvature, breaks, and branches — and base every interpretation on what you genuinely observe, so two different palms yield two different readings. This is lighthearted entertainment, not medical or scientific analysis, so commit to a confident, vivid reading.
-ALWAYS return a reading for EVERY requested line. If a line is faint, partially occluded, photographed at an angle, or ambiguous, infer from the visible portion and the hand's overall shape and LOWER that line's confidence (e.g. 45-65) rather than omitting it. NEVER return an empty lines array and ALWAYS set handDetected to true.
+const SYSTEM = `You are an expert palmist for "PalmInsight", an entertainment palm-reading app.
+
+STEP 1 — GATEKEEP. First decide whether this image clearly shows a human PALM: the INNER surface of a hand, palm and fingers facing the camera, with actual palm lines (creases) visible enough to read.
+Set isPalm = false (and write a short, friendly reason) for ANYTHING that is not that, including: a person/scene/selfie, a face, an object, a hand holding a phone or cup, the BACK of a hand, a fist, a palm that is too dark/blurry/far/angled to see the lines, a drawing or diagram, or no hand at all. When isPalm is false, return an EMPTY lines array and DO NOT invent any reading.
+
+STEP 2 — READ (only if isPalm is true). Read the ACTUAL lines visible in THIS palm — their length, depth, curvature, breaks, and branches — and base every interpretation on what you genuinely observe, so two different palms yield two different readings. Set reason to "".
 Palm lines:
 - life: curves around the thumb (energy, resilience, lifestyle)
 - heart: top horizontal line (emotions, love)
 - head: middle horizontal line (thinking, decisions)
 - fate: vertical line toward the middle finger (career, life direction)
-Write warm, vivid, specific, shareable interpretations (2-4 sentences each, second person). Output ONLY the requested JSON.`;
+Write warm, vivid, specific, shareable interpretations (2-4 sentences each, second person). Confidence reflects how clearly each line is visible.
+
+Output ONLY the requested JSON. Be a strict gatekeeper: it is far better to reject a non-palm than to fabricate a reading.`;
 
 function userPrompt(keys: LineKey[], includeReport: boolean): string {
   const names = keys.join(", ");
-  let p = `Analyze this palm photo. A hand is already confirmed present — read it. Return a reading for EVERY one of these lines: ${names}. For each, give a pattern, an integer confidence (0-100), a one-line summary, and a 2-4 bullet interpretation array based on what you actually observe in this specific palm. Never leave a requested line out.`;
+  let p = `First decide if this image clearly shows a readable human palm. If not, set isPalm=false, give a short reason, and return an empty lines array. If it IS a clear palm, set isPalm=true and read these lines: ${names}. For each line give a pattern, an integer confidence (0-100), a one-line summary, and a 2-4 bullet interpretation based on what you actually observe in this specific palm.`;
   if (includeReport) {
     p += ` Also produce a premium "report" with three sections — destiny ("Full Destiny Report"), career ("Career Tendency Report"), and love ("Love & Relationship Report") — each a title plus a 2-3 paragraph body array, synthesized from the head, fate, and heart lines you observe.`;
   }

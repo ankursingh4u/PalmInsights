@@ -3,6 +3,7 @@ import { z } from "zod";
 import crypto from "crypto";
 import { analyzePalm, gateResult, applyVisionReading } from "@/lib/palmistry";
 import { analyzePalmImage } from "@/lib/ai/palmVision";
+import { aiEnabled } from "@/lib/config";
 import { store } from "@/lib/store";
 import { getOwnerKey } from "@/lib/auth";
 import { track } from "@/lib/analytics";
@@ -46,39 +47,50 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { landmarks, handedness, image, saveImage } = parsed.data;
+  const { landmarks, handedness, image } = parsed.data;
   const id = crypto.randomUUID();
   const createdAt = new Date().toISOString();
   const ownerKey = getOwnerKey();
 
-  // Landmark engine builds the line GEOMETRY (overlays) + a deterministic
-  // fallback reading.
-  let { full } = analyzePalm(landmarks, handedness, id, createdAt);
+  // Landmark engine builds only the line GEOMETRY used to draw the overlay.
+  const { full: geometry } = analyzePalm(landmarks, handedness, id, createdAt);
 
-  // Real, image-based reading for the FREE lines using a cheap model. If AI is
-  // unavailable or fails, we keep the deterministic reading (zero-config demo).
-  if (image) {
+  // ---- AI-first path: the model decides if it's a real palm AND reads it. ---
+  if (aiEnabled) {
+    if (!image) {
+      return NextResponse.json({ error: "Image required" }, { status: 400 });
+    }
     const vision = await analyzePalmImage(image, {
       tier: "free",
       lines: ["life", "heart"],
     });
-    if (vision?.lines?.length) full = applyVisionReading(full, vision);
+
+    // AI unavailable (outage / no credit). Never fabricate a reading.
+    if (!vision) {
+      return NextResponse.json(
+        { error: "Our palm reader is busy right now. Please try again in a moment." },
+        { status: 503 }
+      );
+    }
+
+    // The AI judged this is not a readable palm — return its reason, no reading.
+    if (!vision.isPalm || vision.lines.length === 0) {
+      return NextResponse.json({
+        notPalm: true,
+        message:
+          vision.reason ||
+          "We couldn't find a clear palm in that photo. Hold your open hand up with your palm facing the camera, in good light, and try again.",
+      });
+    }
+
+    const full = applyVisionReading(geometry, vision);
+    await store.saveScan({ id, ownerKey, result: full, paid: false, image, createdAt });
+    await track("scan_created", { ownerKey, scanId: id });
+    return NextResponse.json({ scanId: id, result: gateResult(full, false) });
   }
 
-  // Keep the image on the record so the paid Deep Report can re-read it with
-  // the most capable model. (See the privacy notice — images are sent to an AI
-  // provider for analysis.)
-  await store.saveScan({
-    id,
-    ownerKey,
-    result: full,
-    paid: false,
-    image: image,
-    createdAt,
-  });
-
+  // ---- No AI configured (local/dev demo): deterministic engine. ------------
+  await store.saveScan({ id, ownerKey, result: geometry, paid: false, image, createdAt });
   await track("scan_created", { ownerKey, scanId: id });
-
-  const gated = gateResult(full, false);
-  return NextResponse.json({ scanId: id, result: gated });
+  return NextResponse.json({ scanId: id, result: gateResult(geometry, false) });
 }

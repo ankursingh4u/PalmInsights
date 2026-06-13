@@ -160,10 +160,20 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
       }
 
       setStatus("Reading your palm lines…");
-      const { scanId, result } = await analyze(det.landmarks, det.handedness, {
+      const resp = await analyze(det.landmarks, det.handedness, {
         image: dataUrl,
         saveImage: saveReading,
       });
+      // The AI checks whether this is actually a readable palm.
+      if (resp.notPalm || !resp.scanId || !resp.result) {
+        setError(
+          resp.message ||
+            "We couldn't read a clear palm in that photo. Hold your open hand up with your palm facing the camera, in good light, and try again."
+        );
+        setPhase("capture");
+        return;
+      }
+      const { scanId, result } = resp;
       setScanId(scanId);
       setToken(null);
       sessionStorage.setItem(SS.scanId, scanId);
