@@ -90,17 +90,19 @@ function jsonSchema(includeReport: boolean) {
 }
 
 const SYSTEM = `You are an expert palmist for "PalmInsight", an entertainment palm-reading app for a Gen-Z audience.
-You will be shown a photo of a person's palm. Read the ACTUAL lines visible in THIS image — their length, depth, curvature, breaks, and branches — and base every interpretation on what you genuinely observe. Two different palms must yield two different readings; never give a generic template.
+A human hand has ALREADY been detected in this photo by a separate computer-vision system, so a palm IS present — your job is to read it, not to second-guess whether it is a hand.
+Read the ACTUAL lines visible in THIS image — their length, depth, curvature, breaks, and branches — and base every interpretation on what you genuinely observe, so two different palms yield two different readings. This is lighthearted entertainment, not medical or scientific analysis, so commit to a confident, vivid reading.
+ALWAYS return a reading for EVERY requested line. If a line is faint, partially occluded, photographed at an angle, or ambiguous, infer from the visible portion and the hand's overall shape and LOWER that line's confidence (e.g. 45-65) rather than omitting it. NEVER return an empty lines array and ALWAYS set handDetected to true.
 Palm lines:
 - life: curves around the thumb (energy, resilience, lifestyle)
 - heart: top horizontal line (emotions, love)
 - head: middle horizontal line (thinking, decisions)
 - fate: vertical line toward the middle finger (career, life direction)
-Write warm, vivid, specific, shareable interpretations (2-4 sentences each, second person). Confidence reflects how clearly the line is visible (lower it for blurry/occluded lines). Output ONLY the requested JSON. If no clear hand/palm is visible, set handDetected=false and return an empty lines array.`;
+Write warm, vivid, specific, shareable interpretations (2-4 sentences each, second person). Output ONLY the requested JSON.`;
 
 function userPrompt(keys: LineKey[], includeReport: boolean): string {
   const names = keys.join(", ");
-  let p = `Analyze this palm photo. Return readings for these lines only: ${names}. For each, give pattern, an integer confidence (0-100), a one-line summary, and a 2-4 bullet interpretation array based on what you actually see.`;
+  let p = `Analyze this palm photo. A hand is already confirmed present — read it. Return a reading for EVERY one of these lines: ${names}. For each, give a pattern, an integer confidence (0-100), a one-line summary, and a 2-4 bullet interpretation array based on what you actually observe in this specific palm. Never leave a requested line out.`;
   if (includeReport) {
     p += ` Also produce a premium "report" with three sections — destiny ("Full Destiny Report"), career ("Career Tendency Report"), and love ("Love & Relationship Report") — each a title plus a 2-3 paragraph body array, synthesized from the head, fate, and heart lines you observe.`;
   }
@@ -186,9 +188,14 @@ async function callOpenAI(model: string, image: string, keys: LineKey[], report:
     body: JSON.stringify({
       model,
       max_tokens: 4096,
-      response_format: { type: "json_object" },
+      // Structured Outputs: force the EXACT response shape (otherwise the model
+      // invents its own field names and parsing fails → silent fallback).
+      response_format: {
+        type: "json_schema",
+        json_schema: { name: "palm_reading", strict: true, schema: jsonSchema(report) },
+      },
       messages: [
-        { role: "system", content: SYSTEM + " Respond with a single JSON object." },
+        { role: "system", content: SYSTEM },
         {
           role: "user",
           content: [
@@ -221,7 +228,7 @@ async function callGemini(model: string, image: string, keys: LineKey[], report:
           ],
         },
       ],
-      generationConfig: { responseMimeType: "application/json", maxOutputTokens: 4096 },
+      generationConfig: { responseMimeType: "application/json", responseSchema: jsonSchema(report), maxOutputTokens: 4096 },
     }),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
