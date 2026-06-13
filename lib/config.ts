@@ -8,15 +8,35 @@ export const config = {
   premiumPriceCents: Number(process.env.PREMIUM_PRICE_CENTS || 500),
   premiumCurrency: (process.env.PREMIUM_CURRENCY || "usd").toLowerCase(),
 
-  polar: {
-    accessToken: process.env.POLAR_ACCESS_TOKEN || "",
-    productId: process.env.POLAR_PRODUCT_ID || "",
-    webhookSecret: process.env.POLAR_WEBHOOK_SECRET || "",
-    // "sandbox" for test mode, "production" for live charges.
-    server: (process.env.POLAR_SERVER || "sandbox") === "production"
-      ? ("production" as const)
-      : ("sandbox" as const),
-  },
+  // ONE switch controls everything:
+  //   POLAR_LIVE=false (or unset) → TEST mode  (sandbox, fake cards, no real charges)
+  //   POLAR_LIVE=true            → REAL mode   (production, real money)
+  // The matching token/product/webhook are picked automatically per mode, so
+  // you never have to swap individual values — just flip POLAR_LIVE.
+  polar: (() => {
+    const live = process.env.POLAR_LIVE === "true";
+    const pick = (liveVal?: string, testVal?: string, legacy?: string) =>
+      (live ? liveVal : testVal) || legacy || "";
+    return {
+      live,
+      server: (live ? "production" : "sandbox") as "production" | "sandbox",
+      accessToken: pick(
+        process.env.POLAR_LIVE_ACCESS_TOKEN,
+        process.env.POLAR_SANDBOX_ACCESS_TOKEN,
+        process.env.POLAR_ACCESS_TOKEN
+      ),
+      productId: pick(
+        process.env.POLAR_LIVE_PRODUCT_ID,
+        process.env.POLAR_SANDBOX_PRODUCT_ID,
+        process.env.POLAR_PRODUCT_ID
+      ),
+      webhookSecret: pick(
+        process.env.POLAR_LIVE_WEBHOOK_SECRET,
+        process.env.POLAR_SANDBOX_WEBHOOK_SECRET,
+        process.env.POLAR_WEBHOOK_SECRET
+      ),
+    };
+  })(),
 
   supabase: {
     url: process.env.NEXT_PUBLIC_SUPABASE_URL || "",
