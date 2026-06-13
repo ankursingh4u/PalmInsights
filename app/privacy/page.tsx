@@ -22,21 +22,23 @@ export default function PrivacyPage() {
         <section>
           <h2 className="font-semibold text-white">How your palm image is used</h2>
           <p className="mt-1 text-sm">
-            When you scan your palm, your image is <strong>analyzed automatically
-            in your browser</strong> using an on-device AI model to detect your
-            hand. We do not need to upload your photo to our servers to read your
-            palm.
+            When you scan your palm, your hand is first detected{" "}
+            <strong>in your browser</strong>. To actually read your individual
+            palm lines, your photo is then sent securely to a{" "}
+            <strong>trusted AI vision provider</strong> (such as Anthropic,
+            OpenAI, or Google) for analysis. The reading you see is generated
+            from your real image.
           </p>
         </section>
 
         <section>
           <h2 className="font-semibold text-white">What we store</h2>
           <p className="mt-1 text-sm">
-            We store the resulting <strong>reading data</strong> (detected
-            patterns and interpretations) so you can revisit or share it. Your
-            original palm photo is processed and{" "}
-            <strong>may be deleted after processing</strong>; it is not included
-            in shared links or share cards.
+            We store your <strong>reading</strong> (detected patterns and
+            interpretations) and your palm photo with the reading, so the premium
+            Deep Report can re-read it in higher detail and so it appears in your
+            history. Your photo is <strong>never</strong> included in shared links
+            or share cards — only the generated reading text is shareable.
           </p>
         </section>
 

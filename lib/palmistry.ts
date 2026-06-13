@@ -467,6 +467,35 @@ export function analyzePalm(
 }
 
 /**
+ * Overlay AI vision content (real, image-derived interpretation) onto a result
+ * whose line GEOMETRY came from the landmark engine. Geometry/colour/tier/path
+ * are preserved; pattern, confidence, summary, interpretation (and optionally
+ * the premium report) are replaced with what the model actually saw.
+ */
+export function applyVisionReading(
+  full: AnalysisResult,
+  vision: {
+    lines: { key: LineKey; pattern: string; confidence: number; summary: string; interpretation: string[] }[];
+    report?: PremiumReport;
+  }
+): AnalysisResult {
+  const byKey = new Map(vision.lines.map((l) => [l.key, l]));
+  const lines = full.lines.map((line) => {
+    const v = byKey.get(line.key);
+    if (!v) return line;
+    return {
+      ...line,
+      pattern: v.pattern || line.pattern,
+      patternKey: `${line.key}-ai`,
+      confidence: v.confidence || line.confidence,
+      summary: v.summary || line.summary,
+      interpretation: v.interpretation?.length ? v.interpretation : line.interpretation,
+    };
+  });
+  return { ...full, lines, report: vision.report ?? full.report };
+}
+
+/**
  * Produce the client-facing result. When `unlocked` is false, premium lines
  * are reduced to title-only previews and the report is stripped.
  */

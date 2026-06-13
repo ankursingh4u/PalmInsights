@@ -254,8 +254,8 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
               className="h-4 w-4 accent-cosmic-500"
             />
             <span>
-              Save this reading{saveReading ? " (including the palm photo)" : ""} to
-              my history. Otherwise your photo is not stored.
+              Save this reading to my history. Your palm photo is sent to our AI
+              to read your lines either way; this just keeps it in your history.
             </span>
           </label>
           {error && (
@@ -264,7 +264,7 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
             </div>
           )}
           <p className="text-center text-xs text-white/40">
-            Your photo is analyzed in your browser. By scanning you agree to our{" "}
+            Your hand is detected in your browser, then your photo is read by AI. By scanning you agree to our{" "}
             <Link href="/privacy" className="underline">
               privacy notice
             </Link>

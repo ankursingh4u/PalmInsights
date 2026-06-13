@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import crypto from "crypto";
-import { analyzePalm, gateResult } from "@/lib/palmistry";
+import { analyzePalm, gateResult, applyVisionReading } from "@/lib/palmistry";
+import { analyzePalmImage } from "@/lib/ai/palmVision";
 import { store } from "@/lib/store";
 import { getOwnerKey } from "@/lib/auth";
 import { track } from "@/lib/analytics";
@@ -50,14 +51,29 @@ export async function POST(req: NextRequest) {
   const createdAt = new Date().toISOString();
   const ownerKey = getOwnerKey();
 
-  const { full } = analyzePalm(landmarks, handedness, id, createdAt);
+  // Landmark engine builds the line GEOMETRY (overlays) + a deterministic
+  // fallback reading.
+  let { full } = analyzePalm(landmarks, handedness, id, createdAt);
 
+  // Real, image-based reading for the FREE lines using a cheap model. If AI is
+  // unavailable or fails, we keep the deterministic reading (zero-config demo).
+  if (image) {
+    const vision = await analyzePalmImage(image, {
+      tier: "free",
+      lines: ["life", "heart"],
+    });
+    if (vision?.lines?.length) full = applyVisionReading(full, vision);
+  }
+
+  // Keep the image on the record so the paid Deep Report can re-read it with
+  // the most capable model. (See the privacy notice — images are sent to an AI
+  // provider for analysis.)
   await store.saveScan({
     id,
     ownerKey,
     result: full,
     paid: false,
-    image: saveImage ? image : undefined,
+    image: image,
     createdAt,
   });
 

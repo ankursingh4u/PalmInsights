@@ -40,7 +40,8 @@ export function analyze(
   return postJSON("/api/analyze", {
     landmarks,
     handedness,
-    image: opts?.saveImage ? opts.image : undefined,
+    // The image is always sent so the AI can read the actual palm lines.
+    image: opts?.image,
     saveImage: opts?.saveImage ?? false,
   });
 }
