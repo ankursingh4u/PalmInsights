@@ -12,10 +12,35 @@ const LINES = [
   { name: "Fate Line", color: "text-fate", desc: "Career & life direction", free: false },
 ];
 
+// Everything the product does — shown up front so visitors instantly get it.
+const FEATURES = [
+  { icon: "🤚", title: "Real AI palm reading", body: "Our AI looks at your actual photo and reads your real lines — every palm is different." },
+  { icon: "🧠", title: "Knows a real palm", body: "It verifies it's a genuine palm first, so you get a true reading, never a fake one." },
+  { icon: "💰", title: "Money & Wealth", body: "Your earning style, financial outlook, and when prosperity peaks." },
+  { icon: "💍", title: "Marriage & Partnership", body: "Partnership timing and what a lasting bond looks like for you." },
+  { icon: "👶", title: "Family & Children", body: "Your nurturing style and what the lines hint about family." },
+  { icon: "🌌", title: "Destiny & Career", body: "Your big-picture life story plus career strengths and turning points." },
+  { icon: "💕", title: "You + Your Crush", body: "Scan two palms (or a birth date) for a love compatibility match score." },
+  { icon: "🌙", title: "Daily palm guidance", body: "What to wear, your lucky time, what's good today — fresh every day." },
+  { icon: "✦", title: "Your palm personality", body: "A catchy palm 'type' with your lucky number, color & day." },
+  { icon: "📲", title: "Shareable story card", body: "A gorgeous card for Instagram & Snap — share your reading in a tap." },
+  { icon: "🔒", title: "Private & secure", body: "Your hand is detected in your browser; readings stay yours." },
+  { icon: "⚡", title: "Instant · no sign-up", body: "Get your free reading in seconds — no account needed." },
+];
+
+const REPORT = [
+  { icon: "🌌", t: "Destiny" },
+  { icon: "💼", t: "Career & Success" },
+  { icon: "💰", t: "Money & Wealth" },
+  { icon: "💗", t: "Love" },
+  { icon: "💍", t: "Marriage" },
+  { icon: "👶", t: "Family & Children" },
+];
+
 const STEPS = [
   { n: "1", title: "Capture your palm", body: "Snap a photo or upload one. Open hand, good lighting." },
-  { n: "2", title: "AI detects your lines", body: "We find your hand and map your four major palm lines." },
-  { n: "3", title: "Read your story", body: "Tap any line for an instant, personalized interpretation." },
+  { n: "2", title: "AI reads your lines", body: "Our AI confirms it's a palm and reads your real lines." },
+  { n: "3", title: "Read your story", body: "Get instant, personalized insights — free, no sign-up." },
 ];
 
 export default function HomePage() {
@@ -32,9 +57,9 @@ export default function HomePage() {
       </header>
 
       {/* Hero */}
-      <section className="relative grid place-items-center py-12 text-center sm:py-16">
-        <PalmArt className="animate-float mb-2 h-44 w-44 sm:h-52 sm:w-52" />
-        <span className="chip mb-6 animate-fade-up bg-cosmic-500/15 text-cosmic-200">
+      <section className="relative grid place-items-center py-10 text-center sm:py-14">
+        <PalmArt className="animate-float mb-2 h-40 w-40 sm:h-52 sm:w-52" />
+        <span className="chip mb-5 animate-fade-up bg-cosmic-500/15 text-cosmic-200">
           ✨ AI-powered palmistry
         </span>
         <h1 className="animate-fade-up font-display text-4xl font-bold leading-tight sm:text-6xl">
@@ -45,40 +70,70 @@ export default function HomePage() {
           </span>
         </h1>
         <p className="mt-6 max-w-xl animate-fade-up text-lg text-white/70">
-          Upload a photo of your hand and watch AI highlight your palm lines,
-          then reveal what they say about your life, love, mind and destiny.
+          A real AI reads your actual palm and reveals your life, love, money,
+          marriage, family and destiny — plus a daily guide and your lucky
+          number, color &amp; day.
         </p>
         <div className="mt-9 flex animate-fade-up flex-col items-center gap-3 sm:flex-row">
           <Link href="/scan" className="btn-primary text-lg">
             ✋ Scan Palm — Free
           </Link>
-          <span className="text-sm text-white/50">
-            No sign-up · Instant results
-          </span>
+          <span className="text-sm text-white/50">No sign-up · Instant results</span>
         </div>
       </section>
 
-      {/* Lines preview */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {LINES.map((l) => (
-          <div key={l.name} className="card animate-fade-up">
-            <div className="flex items-center justify-between">
-              <h3 className={`font-semibold ${l.color}`}>{l.name}</h3>
-              <span className="chip">
-                {l.free ? "Free" : `${priceLabel()} Premium`}
-              </span>
+      {/* Everything you get — the full feature showcase */}
+      <section className="py-8">
+        <div className="text-center">
+          <span className="chip bg-cosmic-500/15 text-cosmic-200">Everything inside</span>
+          <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl">
+            One palm photo. This much insight.
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-white/60">
+            No login, no catch — start free and see your reading in seconds.
+          </p>
+        </div>
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((f, i) => (
+            <div
+              key={f.title}
+              className="card animate-fade-up"
+              style={{ animationDelay: `${(i % 6) * 60}ms` }}
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">{f.icon}</span>
+                <h3 className="font-semibold">{f.title}</h3>
+              </div>
+              <p className="mt-2 text-sm text-white/60">{f.body}</p>
             </div>
-            <p className="mt-2 text-sm text-white/60">{l.desc}</p>
-          </div>
-        ))}
+          ))}
+        </div>
+      </section>
+
+      {/* The four lines */}
+      <section className="py-10">
+        <h2 className="text-center font-display text-2xl font-semibold sm:text-3xl">
+          Your four palm lines, decoded
+        </h2>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {LINES.map((l) => (
+            <div key={l.name} className="card">
+              <div className="flex items-center justify-between">
+                <h3 className={`font-semibold ${l.color}`}>{l.name}</h3>
+                <span className="chip">{l.free ? "Free" : "Premium"}</span>
+              </div>
+              <p className="mt-2 text-sm text-white/60">{l.desc}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* How it works */}
-      <section className="py-20">
-        <h2 className="text-center font-display text-3xl font-semibold">
+      <section className="py-10">
+        <h2 className="text-center font-display text-2xl font-semibold sm:text-3xl">
           How it works
         </h2>
-        <div className="mt-10 grid gap-6 sm:grid-cols-3">
+        <div className="mt-8 grid gap-6 sm:grid-cols-3">
           {STEPS.map((s) => (
             <div key={s.n} className="card text-center">
               <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-cosmic-500/20 font-display text-lg font-bold text-cosmic-200">
@@ -91,29 +146,43 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Premium teaser */}
+      {/* Premium Deep Report */}
       <section className="card premium-surface relative overflow-hidden p-8 text-center sm:p-12">
-        <h2 className="font-display text-3xl font-semibold">
-          Unlock your Deep Report
+        <span className="chip bg-cosmic-500/20 text-cosmic-200">✦ Deep Report · {priceLabel()}</span>
+        <h2 className="mt-3 font-display text-3xl font-semibold">
+          Unlock the full picture
         </h2>
         <p className="mx-auto mt-3 max-w-lg text-white/70">
-          Reveal your Head & Fate lines, a full destiny report, love
-          compatibility, and a career tendency analysis — all for {priceLabel()}.
+          Six personalized chapters read from your palm — money, marriage,
+          children and more — plus your palm personality type and lucky
+          highlights. One-time {priceLabel()}.
         </p>
-        <ul className="mx-auto mt-6 grid max-w-md gap-2 text-left text-sm text-white/80">
-          {[
-            "Head & Fate line analysis",
-            "Full destiny report",
-            "Love compatibility (two palms or birth date)",
-            "Career tendency report",
-          ].map((f) => (
-            <li key={f} className="flex items-center gap-2">
-              <span className="text-cosmic-300">✦</span> {f}
-            </li>
+        <div className="mx-auto mt-7 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
+          {REPORT.map((r) => (
+            <div key={r.t} className="rounded-xl border border-white/10 bg-white/5 px-3 py-4">
+              <div className="text-2xl">{r.icon}</div>
+              <div className="mt-1 text-sm font-medium text-white/85">{r.t}</div>
+            </div>
           ))}
-        </ul>
+        </div>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-sm text-white/70">
+          <span className="chip">💕 Love compatibility</span>
+          <span className="chip">🌙 Daily email guidance</span>
+          <span className="chip">✦ Lucky number, color &amp; day</span>
+        </div>
         <Link href="/scan" className="btn-primary mt-8">
-          Start your reading
+          Start your free reading
+        </Link>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-16 text-center">
+        <h2 className="font-display text-3xl font-semibold sm:text-4xl">
+          Your palm is waiting.
+        </h2>
+        <p className="mt-3 text-white/60">Free reading in seconds — no account, no card.</p>
+        <Link href="/scan" className="btn-primary mt-7 text-lg">
+          ✋ Scan My Palm Free
         </Link>
       </section>
 
