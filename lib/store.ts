@@ -52,6 +52,9 @@ interface Store {
   getEvents(): Promise<AnalyticsEvent[]>;
   getPayments(): Promise<Payment[]>;
   recentScans(limit: number): Promise<ScanSummary[]>;
+
+  // daily email: registered users who own a paid scan (most recent paid scan).
+  listDailyEmailRecipients(): Promise<{ email: string; scanId: string }[]>;
 }
 
 function toSummary(r: ScanRecord): ScanSummary {
@@ -129,6 +132,16 @@ class MemoryStore implements Store {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, limit)
       .map(toSummary);
+  }
+  async listDailyEmailRecipients() {
+    const out: { email: string; scanId: string }[] = [];
+    for (const user of this.users.values()) {
+      const paid = [...this.scans.values()]
+        .filter((s) => s.ownerKey === user.id && s.paid)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+      if (paid) out.push({ email: user.email, scanId: paid.id });
+    }
+    return out;
   }
 }
 
@@ -255,6 +268,25 @@ class SupabaseStore implements Store {
       .order("created_at", { ascending: false })
       .limit(limit);
     return (data ?? []).map((d) => toSummary(this.row(d)));
+  }
+  async listDailyEmailRecipients() {
+    const { data: scans } = await this.c
+      .from("palm_scans")
+      .select("id, owner_key, created_at")
+      .eq("paid", true)
+      .order("created_at", { ascending: false });
+    const { data: users } = await this.c.from("palm_users").select("id, email");
+    const emailById = new Map((users ?? []).map((u: any) => [u.id, u.email]));
+    const seen = new Set<string>();
+    const out: { email: string; scanId: string }[] = [];
+    for (const s of scans ?? []) {
+      const email = emailById.get(s.owner_key);
+      if (email && !seen.has(s.owner_key)) {
+        seen.add(s.owner_key);
+        out.push({ email, scanId: s.id });
+      }
+    }
+    return out;
   }
 
   private row(d: any): ScanRecord {

@@ -62,7 +62,17 @@ export const config = {
   },
 
   unlockSecret: process.env.UNLOCK_TOKEN_SECRET || "dev-only-change-me",
+
+  // Daily-horoscope email delivery (Resend). Optional.
+  email: {
+    resendKey: process.env.RESEND_API_KEY || "",
+    from: process.env.EMAIL_FROM || "PalmInsight <onboarding@resend.dev>",
+    cronSecret: process.env.CRON_SECRET || "",
+  },
 };
+
+/** True when email delivery (Resend) is configured. */
+export const emailEnabled = Boolean(config.email.resendKey);
 
 /**
  * True when real Polar billing is configured (otherwise mock checkout).
