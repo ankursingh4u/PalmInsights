@@ -34,19 +34,30 @@ const ReportSectionSchema = z.object({
   body: z.array(z.string()),
 });
 
+const HighlightsSchema = z.object({
+  archetype: z.string(),
+  luckyNumber: z.string(),
+  luckyColor: z.string(),
+  luckyDay: z.string(),
+});
+
+const ReportSchema = z.object({
+  highlights: HighlightsSchema,
+  destiny: ReportSectionSchema,
+  career: ReportSectionSchema,
+  wealth: ReportSectionSchema,
+  love: ReportSectionSchema,
+  marriage: ReportSectionSchema,
+  children: ReportSectionSchema,
+});
+
 const VisionResultSchema = z.object({
   // true ONLY when the image clearly shows a human palm with readable lines.
   isPalm: z.boolean(),
   // when isPalm is false, a short friendly reason to show the user; else "".
   reason: z.string(),
   lines: z.array(LineReadingSchema),
-  report: z
-    .object({
-      destiny: ReportSectionSchema,
-      career: ReportSectionSchema,
-      love: ReportSectionSchema,
-    })
-    .optional(),
+  report: ReportSchema.optional(),
 });
 
 export type VisionLineReading = z.infer<typeof LineReadingSchema>;
@@ -82,11 +93,30 @@ function jsonSchema(includeReport: boolean) {
   };
   const required = ["isPalm", "reason", "lines"];
   if (includeReport) {
+    const highlights = {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        archetype: { type: "string", description: "a catchy 2-4 word palm personality type, e.g. 'The Visionary Builder'" },
+        luckyNumber: { type: "string" },
+        luckyColor: { type: "string" },
+        luckyDay: { type: "string", description: "a day of the week" },
+      },
+      required: ["archetype", "luckyNumber", "luckyColor", "luckyDay"],
+    };
     properties.report = {
       type: "object",
       additionalProperties: false,
-      properties: { destiny: section, career: section, love: section },
-      required: ["destiny", "career", "love"],
+      properties: {
+        highlights,
+        destiny: section,
+        career: section,
+        wealth: section,
+        love: section,
+        marriage: section,
+        children: section,
+      },
+      required: ["highlights", "destiny", "career", "wealth", "love", "marriage", "children"],
     };
     required.push("report");
   }
@@ -112,7 +142,15 @@ function userPrompt(keys: LineKey[], includeReport: boolean): string {
   const names = keys.join(", ");
   let p = `First decide if this image clearly shows a readable human palm. If not, set isPalm=false, give a short reason, and return an empty lines array. If it IS a clear palm, set isPalm=true and read these lines: ${names}. For each line give a pattern, an integer confidence (0-100), a one-line summary, and a 2-4 bullet interpretation based on what you actually observe in this specific palm.`;
   if (includeReport) {
-    p += ` Also produce a premium "report" with three sections — destiny ("Full Destiny Report"), career ("Career Tendency Report"), and love ("Love & Relationship Report") — each a title plus a 2-3 paragraph body array, synthesized from the head, fate, and heart lines you observe.`;
+    p += ` Also produce a premium "report" synthesized from the head, fate, heart and life lines (and overall hand shape) you observe in THIS palm. It must contain:
+- highlights: { archetype (a catchy 2-4 word palm personality type), luckyNumber, luckyColor, luckyDay (a weekday) } — make these feel personal to this palm.
+- destiny ("Your Destiny"): the big-picture life story.
+- career ("Career & Success"): work strengths, ideal fields, a turning point.
+- wealth ("Money & Wealth"): earning style, financial outlook, when prosperity peaks.
+- love ("Love & Relationships"): emotional nature and how you connect.
+- marriage ("Marriage & Partnership"): partnership timing, what a lasting bond looks like for you.
+- children ("Family & Children"): family life, nurturing style, and what the lines hint about children.
+Each section is a title plus a vivid 2-3 paragraph body array, warm and second-person. This is lighthearted entertainment — commit to specific, confident, shareable predictions.`;
   }
   return p;
 }

@@ -364,10 +364,19 @@ function buildReport(lines: Record<LineKey, PalmLine>, f: PalmFeatures): Premium
     3
   );
   const decade = 25 + Math.floor(rand(seed, 5) * 12); // late 20s–30s turning point
+  const archetypes = ["The Visionary Builder", "The Warm Strategist", "The Creative Maverick", "The Steady Achiever", "The Magnetic Connector"];
+  const colors = ["Emerald", "Sapphire Blue", "Gold", "Crimson", "Violet"];
+  const days = ["Monday", "Wednesday", "Thursday", "Friday", "Sunday"];
 
   return {
+    highlights: {
+      archetype: archetypes[Math.floor(rand(seed, 7) * archetypes.length)],
+      luckyNumber: String(1 + Math.floor(rand(seed, 8) * 9)),
+      luckyColor: colors[Math.floor(rand(seed, 9) * colors.length)],
+      luckyDay: days[Math.floor(rand(seed, 10) * days.length)],
+    },
     destiny: {
-      title: "Full Destiny Report",
+      title: "Your Destiny",
       body: [
         `Your palm tells the story of a ${head.summary.toLowerCase().replace(/\.$/, "")} guided by ${heart.summary.toLowerCase().replace(/\.$/, "")}`,
         `The interplay of your head and heart lines suggests you make decisions that honor both logic and feeling — a rare balance that serves you in moments that matter most.`,
@@ -375,19 +384,43 @@ function buildReport(lines: Record<LineKey, PalmLine>, f: PalmFeatures): Premium
       ],
     },
     career: {
-      title: "Career Tendency Report",
+      title: "Career & Success",
       body: [
         `Your fate line suggests ${fate.summary.toLowerCase().replace(/\.$/, "")}, with momentum building rather than arriving all at once.`,
         `You may experience a key turning point in your late ${Math.floor(decade / 10) * 10 === 20 ? "20s" : "20s–30s"} — a project, role, or risk that redefines what you do.`,
         `Best-suited environments: ${careerEnvs.join(", ")}.`,
       ],
     },
+    wealth: {
+      title: "Money & Wealth",
+      body: [
+        `Your hand points to wealth that is earned and built rather than handed to you — steady gains that compound as you back your own judgment.`,
+        `Money tends to follow your skills, so the strongest financial leaps come right after you invest in mastering something. Your prosperity peaks in your ${Math.floor(decade / 10) * 10 === 20 ? "30s" : "mid-30s onward"}.`,
+        `Guard against impulsive spending around big wins; channel a slice into long-term assets and your security grows quietly and surely.`,
+      ],
+    },
     love: {
-      title: "Love & Relationship Report",
+      title: "Love & Relationships",
       body: [
         `In love, your heart line marks you as ${heart.summary.toLowerCase().replace(/\.$/, "")}.`,
         `You connect most deeply with partners who respect both your independence and your need for genuine emotional honesty.`,
         `Your strongest relationships are built slowly and intentionally — depth over speed, trust over intensity.`,
+      ],
+    },
+    marriage: {
+      title: "Marriage & Partnership",
+      body: [
+        `Your marriage line hints at a committed bond that deepens with time rather than burning fast and fading.`,
+        `A meaningful partnership solidifies in your late ${Math.floor(decade / 10) * 10 === 20 ? "20s" : "20s–30s"} — likely with someone who feels like both a best friend and a teammate.`,
+        `Lasting harmony comes when you choose honesty over keeping the peace; your bond thrives on shared goals and mutual respect.`,
+      ],
+    },
+    children: {
+      title: "Family & Children",
+      body: [
+        `Your palm suggests a warm, protective family nature — you create the kind of home people feel safe in.`,
+        `The lines hint at children playing a joyful role in your life story, with a nurturing style that is encouraging rather than controlling.`,
+        `Whatever shape your family takes, your gift is making the people closest to you feel deeply seen and supported.`,
       ],
     },
   };

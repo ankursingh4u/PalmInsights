@@ -38,16 +38,28 @@ export interface PalmLine {
   interpretation: string[];
 }
 
-/** Premium narrative sections (destiny / love / career). */
+/** Premium narrative sections (destiny / career / wealth / love / marriage…). */
 export interface ReportSection {
   title: string;
   body: string[];
 }
 
+/** Shareable, at-a-glance premium highlights. */
+export interface ReportHighlights {
+  archetype: string; // a catchy palm "personality type", e.g. "The Visionary Builder"
+  luckyNumber: string;
+  luckyColor: string;
+  luckyDay: string;
+}
+
 export interface PremiumReport {
+  highlights: ReportHighlights;
   destiny: ReportSection;
   career: ReportSection;
+  wealth: ReportSection;
   love: ReportSection;
+  marriage: ReportSection;
+  children: ReportSection;
 }
 
 /** Result of an analysis. Premium lines/report are present only when unlocked. */
