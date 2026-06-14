@@ -94,7 +94,7 @@ export function fetchReport(
 
 export function fetchHoroscope(
   scanId: string
-): Promise<{ horoscope: string; date: string }> {
+): Promise<{ guidance: import("./types").DailyGuidance; date: string }> {
   return postJSON("/api/horoscope", { scanId });
 }
 

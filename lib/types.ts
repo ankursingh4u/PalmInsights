@@ -85,6 +85,17 @@ export interface CompatibilityResult {
   advice: string[];
 }
 
+/** Rich, personalized daily lifestyle guidance derived from a palm reading. */
+export interface DailyGuidance {
+  horoscope: string; // 2-3 sentence reading for today
+  wearColor: string; // lucky color to wear, e.g. "Emerald green"
+  outfit: string; // short style tip
+  goodFor: string[]; // favorable activities today
+  avoid: string[]; // things to skip today
+  luckyTime: string; // best window, e.g. "Afternoon (2–5 PM)"
+  mood: string; // one-word vibe, e.g. "Magnetic"
+}
+
 // --- accounts / persistence -------------------------------------------------
 
 /** A registered user (Users table). */
