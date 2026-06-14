@@ -8,3 +8,11 @@ out
 .vercel
 next-env.d.ts
 tsconfig.tsbuildinfo
+
+.vercel
+
+# internal docs — never push
+*.docx
+*.pdf
+PRODUCT_OVERVIEW.md
+TESTING.md
