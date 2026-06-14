@@ -7,10 +7,12 @@ import { AuthMenu } from "./AuthMenu";
 import { PalmCapture } from "./PalmCapture";
 import { ScanningView } from "./ScanningView";
 import { PalmOverlay } from "./PalmOverlay";
-import { LineCard, LockedLineCard } from "./LineCard";
+import { LineCard } from "./LineCard";
 import { Paywall } from "./Paywall";
+import { PremiumTeaser } from "./PremiumTeaser";
 import { ReportView } from "./ReportView";
 import { CompatibilityPanel } from "./CompatibilityPanel";
+import { DailyHoroscope } from "./DailyHoroscope";
 import { SharePanel } from "./SharePanel";
 import { preloadDetector, detectHand } from "@/lib/mediapipe";
 import { loadImage, downscaleDataUrl } from "@/lib/image";
@@ -136,6 +138,11 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
     setToken(tok);
     setScanId(id);
     applyResult(result);
+    try {
+      navigator.vibrate?.([20, 40, 30, 40, 60]); // celebratory unlock buzz
+    } catch {
+      /* unsupported */
+    }
   }
 
   async function handleImage(rawDataUrl: string) {
@@ -229,6 +236,11 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
   }
 
   function reset() {
+    try {
+      navigator.vibrate?.(12);
+    } catch {
+      /* unsupported */
+    }
     setPhase("capture");
     setImage(null);
     setResult(null);
@@ -324,19 +336,13 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
             ))}
           </div>
 
-          {/* Locked previews + paywall */}
-          {!result.unlocked && result.lockedPreviews && (
+          {/* Daily palm horoscope (everyone) */}
+          {scanId && <DailyHoroscope scanId={scanId} />}
+
+          {/* Blurred premium teaser + paywall */}
+          {!result.unlocked && (
             <>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {result.lockedPreviews.map((p) => (
-                  <LockedLineCard
-                    key={p.key}
-                    label={p.label}
-                    color={p.color}
-                    onUnlock={handleUnlock}
-                  />
-                ))}
-              </div>
+              <PremiumTeaser onUnlock={handleUnlock} />
               <Paywall
                 priceLabel={priceLabel}
                 busy={unlockBusy}

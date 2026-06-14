@@ -51,13 +51,56 @@ export async function generateShareCard(
   ctx.font = "600 40px Georgia, serif";
   ctx.fillText("✋ PALMINSIGHT", W / 2, 150);
 
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "700 76px Georgia, serif";
-  ctx.fillText("My Palm Reading", W / 2, 270);
+  const h = result.report?.highlights;
 
-  // Line cards.
-  let y = 420;
-  for (const line of result.lines.slice(0, 4)) {
+  // Title — the catchy archetype if unlocked, else a generic headline.
+  if (h?.archetype) {
+    ctx.fillStyle = "rgba(255,255,255,0.7)";
+    ctx.font = "500 40px Georgia, serif";
+    ctx.fillText("My palm type is", W / 2, 256);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 84px Georgia, serif";
+    ctx.fillText(h.archetype, W / 2, 350);
+  } else {
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 80px Georgia, serif";
+    ctx.fillText("My Palm Reading", W / 2, 320);
+  }
+
+  let y = h?.archetype ? 440 : 440;
+
+  // Lucky highlights strip (premium).
+  if (h) {
+    const items: [string, string][] = [
+      ["Lucky #", h.luckyNumber],
+      ["Color", h.luckyColor],
+      ["Day", h.luckyDay],
+    ];
+    const pad = 90;
+    const gap = 24;
+    const pw = (W - pad * 2 - gap * 2) / 3;
+    items.forEach(([label, value], i) => {
+      const px = pad + i * (pw + gap);
+      roundRect(ctx, px, y, pw, 150, 24);
+      ctx.fillStyle = "rgba(139,92,246,0.16)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(167,139,250,0.35)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.font = "500 26px Georgia, serif";
+      ctx.fillText(label.toUpperCase(), px + pw / 2, y + 52);
+      ctx.fillStyle = "#e9d5ff";
+      ctx.font = "700 40px Georgia, serif";
+      const v = value.length > 11 ? value.slice(0, 10) + "…" : value;
+      ctx.fillText(v, px + pw / 2, y + 112);
+    });
+    y += 210;
+  }
+
+  // Line cards (top 2 keep it clean and legible).
+  for (const line of result.lines.slice(0, 2)) {
     drawCard(ctx, W, y, line.label, line.pattern, line.summary, line.confidence, line.color);
     y += 300;
   }
@@ -65,10 +108,10 @@ export async function generateShareCard(
   // Footer CTA.
   ctx.textAlign = "center";
   ctx.fillStyle = "rgba(255,255,255,0.85)";
-  ctx.font = "500 38px Georgia, serif";
-  ctx.fillText("Scan your palm at", W / 2, H - 170);
+  ctx.font = "500 40px Georgia, serif";
+  ctx.fillText("✨ Scan your palm free at", W / 2, H - 180);
   ctx.fillStyle = "#a78bfa";
-  ctx.font = "700 44px Georgia, serif";
+  ctx.font = "700 48px Georgia, serif";
   ctx.fillText(prettyUrl(shareUrl), W / 2, H - 110);
 
   return canvas.toDataURL("image/png");

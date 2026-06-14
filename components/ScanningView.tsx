@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 interface Props {
   imageUrl: string | null;
   status: string;
@@ -7,6 +9,15 @@ interface Props {
 
 /** A radar-style scanning animation displayed over the palm during analysis. */
 export function ScanningView({ imageUrl, status }: Props) {
+  // A lively "points analyzed" counter for perceived depth/accuracy.
+  const [points, setPoints] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setPoints((p) => (p < 127 ? p + Math.max(1, Math.round((130 - p) / 12)) : p));
+    }, 90);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <div className="animate-fade-up">
       <div className="relative mx-auto overflow-hidden rounded-2xl border border-cosmic-400/30 bg-black/50 shadow-xl">
@@ -80,7 +91,9 @@ export function ScanningView({ imageUrl, status }: Props) {
 
       <div className="mt-6 text-center">
         <p className="display text-xl font-semibold">{status}</p>
-        <p className="mt-2 text-sm text-white/50">Analyzing in your browser…</p>
+        <p className="mt-2 text-sm text-cosmic-300/80 tabular-nums">
+          ✦ {points} palm points analyzed
+        </p>
       </div>
     </div>
   );

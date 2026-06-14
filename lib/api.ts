@@ -92,6 +92,12 @@ export function fetchReport(
   return postJSON("/api/report", { scanId, token });
 }
 
+export function fetchHoroscope(
+  scanId: string
+): Promise<{ horoscope: string; date: string }> {
+  return postJSON("/api/horoscope", { scanId });
+}
+
 export function fetchCompatibility(args: {
   scanId: string;
   token: string;

@@ -4,7 +4,16 @@ import { useState } from "react";
 import { detectHand } from "@/lib/mediapipe";
 import { analyze, fetchCompatibility } from "@/lib/api";
 import type { CompatibilityResult } from "@/lib/types";
-import { loadImage } from "@/lib/image";
+import { loadImage, downscaleDataUrl } from "@/lib/image";
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
 
 interface Props {
   scanId: string;
@@ -32,15 +41,21 @@ export function CompatibilityPanel({ scanId, token }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const img = await loadImage(URL.createObjectURL(file));
+      const dataUrl = await downscaleDataUrl(await fileToDataUrl(file), 1280);
+      const img = await loadImage(dataUrl);
       const det = await detectHand(img);
       if (!det) {
         setError("No hand detected in the partner photo. Try another.");
         setBusy(false);
         return;
       }
-      const { scanId: partnerScanId } = await analyze(det.landmarks, det.handedness);
-      await run({ scanId, token, partnerScanId });
+      const resp = await analyze(det.landmarks, det.handedness, { image: dataUrl });
+      if (resp.notPalm || !resp.scanId) {
+        setError(resp.message || "That photo isn't a clear palm. Try another.");
+        setBusy(false);
+        return;
+      }
+      await run({ scanId, token, partnerScanId: resp.scanId });
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
@@ -68,11 +83,11 @@ export function CompatibilityPanel({ scanId, token }: Props) {
   return (
     <div className="card">
       <div className="flex items-center gap-2">
-        <span className="text-xl">💞</span>
-        <h3 className="text-lg font-semibold">Love Compatibility</h3>
+        <span className="text-xl">💕</span>
+        <h3 className="text-lg font-semibold">You + Your Crush</h3>
       </div>
       <p className="mt-1 text-sm text-white/60">
-        Compare with a partner using their palm photo or their birth date.
+        See your match — scan their palm or just enter their birth date.
       </p>
 
       <div className="mt-4 flex gap-2">
