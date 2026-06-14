@@ -202,7 +202,12 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
         setUnlockError("Could not unlock. Please try again.");
       }
     } catch (e) {
-      setUnlockError((e as Error).message);
+      const msg = (e as Error).message || "";
+      setUnlockError(
+        /not found/i.test(msg)
+          ? "Your reading session expired. Please scan your palm again, then unlock."
+          : msg || "Could not unlock. Please try again."
+      );
     } finally {
       setUnlockBusy(false);
     }
