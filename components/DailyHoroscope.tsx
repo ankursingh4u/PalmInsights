@@ -10,10 +10,31 @@ export function DailyHoroscope({ scanId }: { scanId: string }) {
 
   useEffect(() => {
     let alive = true;
+    const dayKey = `palm:guidance:${scanId}:${new Date().toISOString().slice(0, 10)}`;
+
+    // Use today's cached guidance if we already have it — stable across
+    // refreshes and never re-hits the API for the same palm on the same day.
+    try {
+      const cached = sessionStorage.getItem(dayKey);
+      if (cached) {
+        setG(JSON.parse(cached));
+        setBusy(false);
+        return;
+      }
+    } catch {
+      /* ignore */
+    }
+
     setBusy(true);
     fetchHoroscope(scanId)
       .then((r) => {
-        if (alive) setG(r.guidance);
+        if (!alive) return;
+        setG(r.guidance);
+        try {
+          sessionStorage.setItem(dayKey, JSON.stringify(r.guidance));
+        } catch {
+          /* quota */
+        }
       })
       .catch(() => {})
       .finally(() => {

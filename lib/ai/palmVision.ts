@@ -283,6 +283,72 @@ async function callGemini(model: string, image: string, keys: LineKey[], report:
   return parse(text);
 }
 
+// --- exact line geometry ----------------------------------------------------
+// Ask a vision model to TRACE the four palm lines as they actually appear in
+// the image, returning ordered normalized points. Used to draw the overlay
+// exactly on the real lines (falls back to landmark geometry if unavailable).
+
+const GEO_SCHEMA = (() => {
+  const point = { type: "object", additionalProperties: false, properties: { x: { type: "number" }, y: { type: "number" } }, required: ["x", "y"] };
+  const arr = { type: "array", items: point };
+  return { type: "object", additionalProperties: false, properties: { life: arr, heart: arr, head: arr, fate: arr }, required: ["life", "heart", "head", "fate"] };
+})();
+
+const GEO_SYS = `You are a precise palm-line tracer. A human palm is in the image. Trace each of the FOUR major palm lines exactly as the creases appear in THIS image and return ordered points along each line.
+Coordinates are normalized: x from 0 (left edge) to 1 (right edge), y from 0 (top) to 1 (bottom), relative to the whole image.
+- life: the long line that curves AROUND the base of the thumb.
+- heart: the upper horizontal line, below the fingers.
+- head: the middle horizontal line, below the heart line.
+- fate: the vertical line running up toward the middle finger (may be faint/short).
+Give 6–12 points per line, ordered along the line, following the actual visible crease. If a line is faint, follow its most likely path from the visible portion and hand shape. Output ONLY the JSON.`;
+
+export type LinePoints = Record<LineKey, { x: number; y: number }[]>;
+
+function validPts(p: unknown): { x: number; y: number }[] {
+  if (!Array.isArray(p)) return [];
+  return p
+    .filter((q): q is { x: number; y: number } => !!q && typeof q.x === "number" && typeof q.y === "number" && q.x >= -0.05 && q.x <= 1.05 && q.y >= -0.05 && q.y <= 1.05)
+    .map((q) => ({ x: Math.min(1, Math.max(0, q.x)), y: Math.min(1, Math.max(0, q.y)) }));
+}
+
+export async function detectLineGeometry(image: string): Promise<LinePoints | null> {
+  if (!aiEnabled || !config.ai.openaiKey || !image) return null;
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.ai.openaiKey}` },
+      body: JSON.stringify({
+        model: config.ai.openaiPro, // best spatial accuracy
+        max_tokens: 2000,
+        temperature: 0,
+        response_format: { type: "json_schema", json_schema: { name: "palm_lines", strict: true, schema: GEO_SCHEMA } },
+        messages: [
+          { role: "system", content: GEO_SYS },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Trace the four palm lines in this image and return their points." },
+              { type: "image_url", image_url: { url: image.startsWith("data:") ? image : `data:image/jpeg;base64,${image}` } },
+            ],
+          },
+        ],
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const o = JSON.parse(data.choices?.[0]?.message?.content ?? "{}");
+    const out: LinePoints = {
+      life: validPts(o.life),
+      heart: validPts(o.heart),
+      head: validPts(o.head),
+      fate: validPts(o.fate),
+    };
+    return out;
+  } catch {
+    return null;
+  }
+}
+
 async function callOne(a: Attempt, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
   if (a.provider === "anthropic") return callAnthropic(a.model, image, keys, report);
   if (a.provider === "openai") return callOpenAI(a.model, image, keys, report);

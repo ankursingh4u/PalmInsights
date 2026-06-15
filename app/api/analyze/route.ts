@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import crypto from "crypto";
-import { analyzePalm, gateResult, applyVisionReading } from "@/lib/palmistry";
-import { analyzePalmImage } from "@/lib/ai/palmVision";
+import { analyzePalm, gateResult, applyVisionReading, applyLineGeometry } from "@/lib/palmistry";
+import { analyzePalmImage, detectLineGeometry } from "@/lib/ai/palmVision";
 import { aiEnabled } from "@/lib/config";
 import { store } from "@/lib/store";
 import { getOwnerKey } from "@/lib/auth";
@@ -60,10 +60,11 @@ export async function POST(req: NextRequest) {
     if (!image) {
       return NextResponse.json({ error: "Image required" }, { status: 400 });
     }
-    const vision = await analyzePalmImage(image, {
-      tier: "free",
-      lines: ["life", "heart"],
-    });
+    // Read the lines + trace their exact geometry in parallel (faster).
+    const [vision, geo] = await Promise.all([
+      analyzePalmImage(image, { tier: "free", lines: ["life", "heart"] }),
+      detectLineGeometry(image),
+    ]);
 
     // AI unavailable (outage / no credit). Never fabricate a reading.
     if (!vision) {
@@ -83,7 +84,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const full = applyVisionReading(geometry, vision);
+    let full = applyVisionReading(geometry, vision);
+    if (geo) full = applyLineGeometry(full, geo); // exact AI-traced overlay
     await store.saveScan({ id, ownerKey, result: full, paid: false, image, createdAt });
     await track("scan_created", { ownerKey, scanId: id });
     return NextResponse.json({ scanId: id, result: gateResult(full, false) });

@@ -41,6 +41,8 @@ export async function dailyGuidance(
       body: JSON.stringify({
         model: config.ai.openaiCheap,
         max_tokens: 500,
+        // Deterministic: same palm + same date → same guidance (no random drift).
+        temperature: 0,
         response_format: { type: "json_schema", json_schema: { name: "daily", strict: true, schema: SCHEMA } },
         messages: [
           { role: "system", content: sys },

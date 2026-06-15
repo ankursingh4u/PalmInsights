@@ -99,20 +99,40 @@ export async function generateShareCard(
     y += 210;
   }
 
-  // Line cards (top 2 keep it clean and legible).
-  for (const line of result.lines.slice(0, 2)) {
-    drawCard(ctx, W, y, line.label, line.pattern, line.summary, line.confidence, line.color);
-    y += 300;
+  // Line cards — show every line we have, each with its interpretation.
+  const lines = result.lines.slice(0, 4);
+  const cardH = lines.length <= 2 ? 320 : 250;
+  for (const line of lines) {
+    drawCard(ctx, W, y, line, cardH);
+    y += cardH + 26;
+  }
+
+  // For free readings, tease the premium topics so the card sells itself.
+  if (!h) {
+    roundRect(ctx, 90, y, W - 180, 150, 24);
+    ctx.fillStyle = "rgba(139,92,246,0.16)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(167,139,250,0.35)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#e9d5ff";
+    ctx.font = "700 38px Georgia, serif";
+    ctx.fillText("🔒 Unlock the full reading", W / 2, y + 62);
+    ctx.fillStyle = "rgba(255,255,255,0.7)";
+    ctx.font = "400 30px Georgia, serif";
+    ctx.fillText("Money · Marriage · Children · Destiny", W / 2, y + 110);
+    y += 200;
   }
 
   // Footer CTA.
   ctx.textAlign = "center";
   ctx.fillStyle = "rgba(255,255,255,0.85)";
   ctx.font = "500 40px Georgia, serif";
-  ctx.fillText("✨ Scan your palm free at", W / 2, H - 180);
+  ctx.fillText("✨ Scan your palm free at", W / 2, H - 170);
   ctx.fillStyle = "#a78bfa";
   ctx.font = "700 48px Georgia, serif";
-  ctx.fillText(prettyUrl(shareUrl), W / 2, H - 110);
+  ctx.fillText(prettyUrl(shareUrl), W / 2, H - 100);
 
   return canvas.toDataURL("image/png");
 }
@@ -121,15 +141,11 @@ function drawCard(
   ctx: CanvasRenderingContext2D,
   W: number,
   y: number,
-  title: string,
-  pattern: string,
-  summary: string,
-  confidence: number,
-  color: string
+  line: { label: string; pattern: string; summary: string; confidence: number; color: string; interpretation: string[] },
+  h: number
 ) {
   const x = 90;
   const w = W - 180;
-  const h = 250;
   roundRect(ctx, x, y, w, h, 28);
   ctx.fillStyle = "rgba(255,255,255,0.06)";
   ctx.fill();
@@ -139,27 +155,32 @@ function drawCard(
 
   // Color dot + title.
   ctx.textAlign = "left";
-  ctx.fillStyle = color;
+  ctx.fillStyle = line.color;
   ctx.beginPath();
-  ctx.arc(x + 50, y + 60, 16, 0, Math.PI * 2);
+  ctx.arc(x + 50, y + 56, 16, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "700 46px Georgia, serif";
-  ctx.fillText(title, x + 90, y + 75);
+  ctx.font = "700 44px Georgia, serif";
+  ctx.fillText(line.label, x + 90, y + 70);
 
   // Pattern + confidence.
-  ctx.fillStyle = color;
-  ctx.font = "600 34px Georgia, serif";
-  ctx.fillText(pattern, x + 50, y + 135);
+  ctx.fillStyle = line.color;
+  ctx.font = "600 32px Georgia, serif";
+  ctx.fillText(line.pattern, x + 50, y + 126);
   ctx.textAlign = "right";
   ctx.fillStyle = "rgba(255,255,255,0.7)";
-  ctx.fillText(`${confidence}%`, x + w - 50, y + 135);
+  ctx.fillText(`${line.confidence}%`, x + w - 50, y + 126);
 
-  // Summary (wrapped).
+  // Summary + first interpretation line (wrapped).
   ctx.textAlign = "left";
-  ctx.fillStyle = "rgba(255,255,255,0.8)";
-  ctx.font = "400 32px Georgia, serif";
-  wrapText(ctx, summary, x + 50, y + 190, w - 100, 40);
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.font = "600 30px Georgia, serif";
+  let yy = wrapText(ctx, line.summary, x + 50, y + 176, w - 100, 38);
+  if (h > 290 && line.interpretation?.[0]) {
+    ctx.fillStyle = "rgba(255,255,255,0.62)";
+    ctx.font = "400 28px Georgia, serif";
+    wrapText(ctx, line.interpretation[0], x + 50, yy + 44, w - 100, 36);
+  }
 }
 
 function wrapText(
@@ -169,7 +190,7 @@ function wrapText(
   y: number,
   maxWidth: number,
   lineHeight: number
-) {
+): number {
   const words = text.split(" ");
   let line = "";
   let yy = y;
@@ -184,6 +205,7 @@ function wrapText(
     }
   }
   ctx.fillText(line.trim(), x, yy);
+  return yy;
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {

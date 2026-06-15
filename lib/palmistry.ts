@@ -529,6 +529,24 @@ export function applyVisionReading(
 }
 
 /**
+ * Replace each line's overlay GEOMETRY with AI-traced points (normalized 0..1
+ * → 0..100 viewBox). Only applies a line when the AI returned >= 2 sane points;
+ * otherwise keeps the landmark geometry, so the overlay can only improve.
+ */
+export function applyLineGeometry(
+  full: AnalysisResult,
+  geo: Record<LineKey, { x: number; y: number }[]>
+): AnalysisResult {
+  const lines = full.lines.map((line) => {
+    const raw = geo[line.key];
+    if (!raw || raw.length < 2) return line;
+    const pts: Point[] = raw.map((p) => ({ x: p.x * 100, y: p.y * 100 }));
+    return { ...line, points: pts, path: smoothPath(pts) };
+  });
+  return { ...full, lines };
+}
+
+/**
  * Produce the client-facing result. When `unlocked` is false, premium lines
  * are reduced to title-only previews and the report is stripped.
  */

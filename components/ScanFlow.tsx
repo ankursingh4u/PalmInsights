@@ -20,6 +20,7 @@ import {
   analyze,
   confirmPayment,
   fetchReport,
+  me,
   startCheckout,
   trackEvent,
 } from "@/lib/api";
@@ -49,6 +50,7 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
   const [saveReading, setSaveReading] = useState(false);
   const restored = useRef(false);
   const paywallTracked = useRef<string | null>(null);
+  const resumeUnlock = useRef(false);
 
   // Preload the detection model as soon as the page mounts.
   useEffect(() => {
@@ -105,6 +107,11 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
       cleanUrl();
     }
 
+    // Returning from the login step → resume the unlock automatically.
+    if (savedScanId && sessionStorage.getItem("palm:pendingUnlock") === savedScanId) {
+      resumeUnlock.current = true;
+    }
+
     if (id) {
       const existingToken = localStorage.getItem(tokenKey(id));
       if (checkoutId) {
@@ -131,6 +138,16 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
   function cleanUrl() {
     window.history.replaceState({}, "", "/scan");
   }
+
+  // After login, automatically continue the unlock the user started.
+  useEffect(() => {
+    if (resumeUnlock.current && scanId && result && !result.unlocked && !unlockBusy) {
+      resumeUnlock.current = false;
+      sessionStorage.removeItem("palm:pendingUnlock");
+      void handleUnlock();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanId, result]);
 
   async function doUnlock(id: string, tok: string) {
     const { result } = await fetchReport(id, tok);
@@ -194,10 +211,21 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
   }
 
   async function handleUnlock() {
-    if (!scanId) return;
+    if (!scanId || unlockBusy) return;
     setUnlockBusy(true);
     setUnlockError(null);
+    // Surface immediate feedback near the paywall.
+    document.getElementById("paywall")?.scrollIntoView({ behavior: "smooth", block: "center" });
     try {
+      // Require login before payment. Preserve the reading + resume after login.
+      const { user } = await me();
+      if (!user) {
+        sessionStorage.setItem("palm:pendingUnlock", scanId);
+        // image/scanId/result already in sessionStorage → restored on return.
+        window.location.href = "/login?next=/scan";
+        return;
+      }
+
       const res = await startCheckout(scanId);
       if (res.url) {
         window.location.href = res.url; // redirect to Polar checkout
@@ -213,7 +241,7 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
       setUnlockError(
         /not found/i.test(msg)
           ? "Your reading session expired. Please scan your palm again, then unlock."
-          : msg || "Could not unlock. Please try again."
+          : msg || "Could not start checkout. Please try again."
       );
     } finally {
       setUnlockBusy(false);
@@ -341,15 +369,15 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
 
           {/* Blurred premium teaser + paywall */}
           {!result.unlocked && (
-            <>
-              <PremiumTeaser onUnlock={handleUnlock} />
+            <div id="paywall" className="space-y-5 scroll-mt-4">
+              <PremiumTeaser onUnlock={handleUnlock} busy={unlockBusy} />
               <Paywall
                 priceLabel={priceLabel}
                 busy={unlockBusy}
                 error={unlockError}
                 onUnlock={handleUnlock}
               />
-            </>
+            </div>
           )}
 
           {/* Premium report + features */}

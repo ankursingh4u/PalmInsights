@@ -65,7 +65,7 @@ export default function HomePage() {
         <h1 className="animate-fade-up font-display text-4xl font-bold leading-tight sm:text-6xl">
           Scan Your Palm.
           <br />
-          <span className="bg-gradient-to-r from-cosmic-300 via-cosmic-400 to-blue-300 bg-clip-text text-transparent">
+          <span className="animate-gradient bg-gradient-to-r from-cosmic-300 via-pink-300 to-blue-300 bg-clip-text text-transparent">
             Discover Your Story.
           </span>
         </h1>
@@ -75,7 +75,7 @@ export default function HomePage() {
           number, color &amp; day.
         </p>
         <div className="mt-9 flex animate-fade-up flex-col items-center gap-3 sm:flex-row">
-          <Link href="/scan" className="btn-primary text-lg">
+          <Link href="/scan" className="btn-primary animate-glow text-lg">
             ✋ Scan Palm — Free
           </Link>
           <span className="text-sm text-white/50">No sign-up · Instant results</span>
@@ -97,8 +97,8 @@ export default function HomePage() {
           {FEATURES.map((f, i) => (
             <div
               key={f.title}
-              className="card animate-fade-up"
-              style={{ animationDelay: `${(i % 6) * 60}ms` }}
+              className="card hover-lift animate-fade-up"
+              style={{ animationDelay: `${(i % 6) * 70}ms` }}
             >
               <div className="flex items-center gap-2.5">
                 <span className="text-2xl">{f.icon}</span>
@@ -159,7 +159,7 @@ export default function HomePage() {
         </p>
         <div className="mx-auto mt-7 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
           {REPORT.map((r) => (
-            <div key={r.t} className="rounded-xl border border-white/10 bg-white/5 px-3 py-4">
+            <div key={r.t} className="hover-lift rounded-xl border border-white/10 bg-white/5 px-3 py-4">
               <div className="text-2xl">{r.icon}</div>
               <div className="mt-1 text-sm font-medium text-white/85">{r.t}</div>
             </div>
@@ -181,7 +181,7 @@ export default function HomePage() {
           Your palm is waiting.
         </h2>
         <p className="mt-3 text-white/60">Free reading in seconds — no account, no card.</p>
-        <Link href="/scan" className="btn-primary mt-7 text-lg">
+        <Link href="/scan" className="btn-primary animate-glow mt-7 text-lg">
           ✋ Scan My Palm Free
         </Link>
       </section>

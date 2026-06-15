@@ -30,14 +30,15 @@ const TOPICS = [
   },
 ];
 
-export function PremiumTeaser({ onUnlock }: { onUnlock: () => void }) {
+export function PremiumTeaser({ onUnlock, busy }: { onUnlock: () => void; busy?: boolean }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {TOPICS.map((t) => (
         <button
           key={t.title}
           onClick={onUnlock}
-          className="card group relative cursor-pointer overflow-hidden text-left transition hover:border-cosmic-400/40"
+          disabled={busy}
+          className="card group relative cursor-pointer overflow-hidden text-left transition hover:border-cosmic-400/40 disabled:cursor-wait"
         >
           <div className="flex items-center gap-2">
             <span className="text-xl">{t.icon}</span>
@@ -53,7 +54,7 @@ export function PremiumTeaser({ onUnlock }: { onUnlock: () => void }) {
           {/* Fade + reveal CTA on hover */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-20 items-end justify-center bg-gradient-to-t from-ink/90 to-transparent pb-3">
             <span className="rounded-full bg-cosmic-500/30 px-3 py-1 text-xs font-medium text-cosmic-100 backdrop-blur transition group-hover:bg-cosmic-500/50">
-              Tap to unlock →
+              {busy ? "Preparing checkout…" : "Tap to unlock →"}
             </span>
           </div>
         </button>
