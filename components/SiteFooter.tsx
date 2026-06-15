@@ -19,6 +19,17 @@ export function SiteFooter() {
           <span aria-hidden>·</span>
           <span>© {new Date().getFullYear()} PalmInsight</span>
         </div>
+        <p className="mt-3 text-xs text-white/40">
+          Designed &amp; developed by{" "}
+          <a
+            href="https://ankursingh.site"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-cosmic-300 hover:text-cosmic-200 hover:underline"
+          >
+            ankursingh.site
+          </a>
+        </p>
       </div>
     </footer>
   );
