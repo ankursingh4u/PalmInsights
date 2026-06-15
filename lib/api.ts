@@ -35,14 +35,21 @@ async function getJSON<T>(url: string): Promise<T> {
 export function analyze(
   landmarks: Landmark[],
   handedness: "Left" | "Right" | "Unknown",
-  opts?: { image?: string; saveImage?: boolean }
-): Promise<{ scanId?: string; result?: AnalysisResult; notPalm?: boolean; message?: string }> {
+  opts?: { image?: string; saveImage?: boolean; personName?: string }
+): Promise<{
+  scanId?: string;
+  result?: AnalysisResult;
+  notPalm?: boolean;
+  requiresLogin?: boolean;
+  message?: string;
+}> {
   return postJSON("/api/analyze", {
     landmarks,
     handedness,
     // The image is always sent so the AI can read the actual palm lines.
     image: opts?.image,
     saveImage: opts?.saveImage ?? false,
+    personName: opts?.personName,
   });
 }
 

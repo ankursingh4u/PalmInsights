@@ -31,9 +31,11 @@ export default function ReadingsPage() {
       </header>
 
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-3xl font-semibold">My Readings</h1>
+        <h1 className="font-display text-3xl font-semibold">
+          {signedIn ? "My People" : "My Readings"}
+        </h1>
         <Link href="/scan" className="btn-primary py-2 text-sm">
-          ✋ New scan
+          ＋ Read a person
         </Link>
       </div>
 
@@ -64,21 +66,21 @@ export default function ReadingsPage() {
             href={`/result/${s.id}`}
             className="card flex items-center justify-between gap-4 transition hover:bg-white/[0.07]"
           >
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                {s.topLine && (
-                  <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: s.topLine.color }}
-                  />
-                )}
-                <span className="truncate font-medium">
-                  {s.topLine ? `${s.topLine.label}: ${s.topLine.pattern}` : "Palm reading"}
+            <div className="flex min-w-0 items-center gap-3">
+              <span
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cosmic-500/20 font-display text-lg font-semibold text-cosmic-100"
+                aria-hidden
+              >
+                {(s.personName || "🔮").trim().charAt(0).toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <span className="truncate font-semibold">
+                  {s.personName || "My reading"}
                 </span>
-              </div>
-              <div className="mt-1 text-xs text-white/50">
-                {new Date(s.createdAt).toLocaleString()} · {s.handedness} hand
-                {s.hasImage ? " · 📷 saved" : ""}
+                <div className="mt-0.5 truncate text-xs text-white/50">
+                  {s.topLine ? `${s.topLine.label}: ${s.topLine.pattern} · ` : ""}
+                  {new Date(s.createdAt).toLocaleDateString()}
+                </div>
               </div>
             </div>
             <span className={`chip shrink-0 ${s.paid ? "bg-cosmic-500/20 text-cosmic-200" : ""}`}>

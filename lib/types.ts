@@ -159,6 +159,7 @@ export interface ScanSummary {
   createdAt: string;
   handedness: string;
   paid: boolean;
+  personName?: string;
   topLine?: { label: string; pattern: string; color: string };
   hasImage: boolean;
 }

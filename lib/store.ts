@@ -26,6 +26,7 @@ export interface ScanRecord {
   result: AnalysisResult; // full result incl. premium report
   paid: boolean;
   image?: string; // optional stored palm image (data URL), opt-in only
+  personName?: string; // whose palm this is (named by a signed-in user)
   createdAt: string;
 }
 
@@ -36,6 +37,7 @@ interface Store {
   setPaid(id: string): Promise<void>;
   setScanOwner(id: string, ownerKey: string): Promise<void>;
   listScansByOwner(ownerKey: string): Promise<ScanSummary[]>;
+  countScansByOwner(ownerKey: string): Promise<number>;
   reassignOwner(fromKey: string, toKey: string): Promise<void>;
 
   // users
@@ -64,6 +66,7 @@ function toSummary(r: ScanRecord): ScanSummary {
     createdAt: r.createdAt,
     handedness: r.result.handedness,
     paid: r.paid,
+    personName: r.personName,
     topLine: top ? { label: top.label, pattern: top.pattern, color: top.color } : undefined,
     hasImage: Boolean(r.image),
   };
@@ -97,6 +100,11 @@ class MemoryStore implements Store {
       .filter((r) => r.ownerKey === ownerKey)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .map(toSummary);
+  }
+  async countScansByOwner(ownerKey: string) {
+    let n = 0;
+    for (const r of this.scans.values()) if (r.ownerKey === ownerKey) n++;
+    return n;
   }
   async reassignOwner(fromKey: string, toKey: string) {
     for (const r of this.scans.values()) if (r.ownerKey === fromKey) r.ownerKey = toKey;
@@ -161,6 +169,7 @@ class SupabaseStore implements Store {
       result: r.result,
       paid: r.paid,
       image: r.image ?? null,
+      person_name: r.personName ?? null,
       created_at: r.createdAt,
     });
   }
@@ -173,6 +182,7 @@ class SupabaseStore implements Store {
       result: data.result as AnalysisResult,
       paid: Boolean(data.paid),
       image: data.image ?? undefined,
+      personName: data.person_name ?? undefined,
       createdAt: data.created_at,
     };
   }
@@ -189,6 +199,13 @@ class SupabaseStore implements Store {
       .eq("owner_key", ownerKey)
       .order("created_at", { ascending: false });
     return (data ?? []).map((d) => toSummary(this.row(d)));
+  }
+  async countScansByOwner(ownerKey: string) {
+    const { count } = await this.c
+      .from("palm_scans")
+      .select("*", { count: "exact", head: true })
+      .eq("owner_key", ownerKey);
+    return count ?? 0;
   }
   async reassignOwner(fromKey: string, toKey: string) {
     await this.c.from("palm_scans").update({ owner_key: toKey }).eq("owner_key", fromKey);
@@ -296,6 +313,7 @@ class SupabaseStore implements Store {
       result: d.result,
       paid: Boolean(d.paid),
       image: d.image ?? undefined,
+      personName: d.person_name ?? undefined,
       createdAt: d.created_at,
     };
   }

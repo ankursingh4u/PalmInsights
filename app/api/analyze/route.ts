@@ -5,9 +5,13 @@ import { analyzePalm, gateResult, applyVisionReading, applyLineGeometry } from "
 import { analyzePalmImage, detectLineGeometry } from "@/lib/ai/palmVision";
 import { aiEnabled } from "@/lib/config";
 import { store } from "@/lib/store";
-import { getOwnerKey } from "@/lib/auth";
+import { getOwnerKey, getSessionUserId } from "@/lib/auth";
 import { track } from "@/lib/analytics";
 import { enforceRateLimit } from "@/lib/ratelimit";
+
+// Anonymous (not signed-in) visitors get this many free readings before they
+// must sign up to read for more people.
+const ANON_FREE_READINGS = 1;
 
 export const runtime = "nodejs";
 
@@ -23,6 +27,8 @@ const BodySchema = z.object({
   // Optional: store the palm image with the reading (opt-in consent).
   image: z.string().startsWith("data:image/").max(8_000_000).optional(),
   saveImage: z.boolean().optional(),
+  // Whose palm this is (only used by signed-in users adding people).
+  personName: z.string().trim().max(40).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -47,10 +53,25 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { landmarks, handedness, image } = parsed.data;
+  const { landmarks, handedness, image, personName } = parsed.data;
   const id = crypto.randomUUID();
   const createdAt = new Date().toISOString();
+  const userId = getSessionUserId();
   const ownerKey = getOwnerKey();
+
+  // Anonymous visitors get one free reading. To read for another person they
+  // must sign up — which is also how we keep each person's reading consistent.
+  if (!userId) {
+    const used = await store.countScansByOwner(ownerKey);
+    if (used >= ANON_FREE_READINGS) {
+      return NextResponse.json({
+        requiresLogin: true,
+        message: "You've used your free reading. Sign up free to read palms for more people and save them by name.",
+      });
+    }
+  }
+  // Only signed-in users name people; anonymous reading is just "You".
+  const name = userId ? personName || undefined : undefined;
 
   // Landmark engine builds only the line GEOMETRY used to draw the overlay.
   const { full: geometry } = analyzePalm(landmarks, handedness, id, createdAt);
@@ -86,13 +107,13 @@ export async function POST(req: NextRequest) {
 
     let full = applyVisionReading(geometry, vision);
     if (geo) full = applyLineGeometry(full, geo); // exact AI-traced overlay
-    await store.saveScan({ id, ownerKey, result: full, paid: false, image, createdAt });
+    await store.saveScan({ id, ownerKey, result: full, paid: false, image, personName: name, createdAt });
     await track("scan_created", { ownerKey, scanId: id });
     return NextResponse.json({ scanId: id, result: gateResult(full, false) });
   }
 
   // ---- No AI configured (local/dev demo): deterministic engine. ------------
-  await store.saveScan({ id, ownerKey, result: geometry, paid: false, image, createdAt });
+  await store.saveScan({ id, ownerKey, result: geometry, paid: false, image, personName: name, createdAt });
   await track("scan_created", { ownerKey, scanId: id });
   return NextResponse.json({ scanId: id, result: gateResult(geometry, false) });
 }

@@ -24,7 +24,7 @@ import {
   startCheckout,
   trackEvent,
 } from "@/lib/api";
-import type { AnalysisResult, LineKey } from "@/lib/types";
+import type { AnalysisResult, LineKey, UserPublic } from "@/lib/types";
 
 type Phase = "capture" | "analyzing" | "results";
 
@@ -32,6 +32,7 @@ const SS = {
   image: "palm:image",
   scanId: "palm:scanId",
   result: "palm:result",
+  person: "palm:person",
 };
 const tokenKey = (id: string) => `palm:token:${id}`;
 
@@ -48,6 +49,9 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
   const [unlockBusy, setUnlockBusy] = useState(false);
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [saveReading, setSaveReading] = useState(false);
+  const [user, setUser] = useState<UserPublic | null>(null);
+  const [personName, setPersonName] = useState("");
+  const [needSignup, setNeedSignup] = useState(false);
   const restored = useRef(false);
   const paywallTracked = useRef<string | null>(null);
   const resumeUnlock = useRef(false);
@@ -55,6 +59,11 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
   // Preload the detection model as soon as the page mounts.
   useEffect(() => {
     preloadDetector();
+  }, []);
+
+  // Know whether the visitor is signed in (gates extra people).
+  useEffect(() => {
+    me().then((r) => setUser(r.user ?? null)).catch(() => {});
   }, []);
 
   // Track paywall views once per scan (conversion funnel).
@@ -90,7 +99,9 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
     const savedImage = sessionStorage.getItem(SS.image);
     const savedScanId = sessionStorage.getItem(SS.scanId);
     const savedResult = sessionStorage.getItem(SS.result);
+    const savedPerson = sessionStorage.getItem(SS.person);
 
+    if (savedPerson) setPersonName(savedPerson);
     if (savedImage) setImage(savedImage);
     if (savedScanId) setScanId(savedScanId);
     if (savedResult) {
@@ -187,7 +198,14 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
       const resp = await analyze(det.landmarks, det.handedness, {
         image: dataUrl,
         saveImage: saveReading,
+        personName: user ? personName.trim() : undefined,
       });
+      // Anonymous visitors get one free reading — then sign up for more people.
+      if (resp.requiresLogin) {
+        setNeedSignup(true);
+        setPhase("capture");
+        return;
+      }
       // The AI checks whether this is actually a readable palm.
       if (resp.notPalm || !resp.scanId || !resp.result) {
         setError(
@@ -200,8 +218,11 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
       const { scanId, result } = resp;
       setScanId(scanId);
       setToken(null);
+      setNeedSignup(false);
       sessionStorage.setItem(SS.scanId, scanId);
       sessionStorage.setItem(SS.result, JSON.stringify(result));
+      if (user && personName.trim()) sessionStorage.setItem(SS.person, personName.trim());
+      else sessionStorage.removeItem(SS.person);
       applyResult(result);
       setSelected(null);
     } catch (e) {
@@ -277,9 +298,12 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
     setSelected(null);
     setError(null);
     setUnlockError(null);
+    setNeedSignup(false);
+    setPersonName(""); // fresh name for the next person
     sessionStorage.removeItem(SS.image);
     sessionStorage.removeItem(SS.scanId);
     sessionStorage.removeItem(SS.result);
+    sessionStorage.removeItem(SS.person);
   }
 
   const shareUrl = scanId ? `${baseUrl}/result/${scanId}` : baseUrl;
@@ -291,15 +315,43 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
         <div className="flex items-center gap-2">
           {phase === "results" && (
             <button onClick={reset} className="btn-ghost py-2 text-sm">
-              ↺ Scan again
+              {user ? "＋ Read another person" : "↺ Scan again"}
             </button>
           )}
           <AuthMenu />
         </div>
       </header>
 
-      {phase === "capture" && (
+      {phase === "capture" && needSignup && (
+        <div className="card animate-fade-up premium-surface space-y-4 p-7 text-center">
+          <span className="chip mx-auto bg-cosmic-500/20 text-cosmic-200">✦ Free reading used</span>
+          <h2 className="font-display text-2xl font-semibold">Read palms for more people</h2>
+          <p className="mx-auto max-w-sm text-sm text-white/70">
+            You&apos;ve used your free reading. Sign up free to read for your friends &amp;
+            family — each saved by name with their own daily guidance.
+          </p>
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link href="/signup?next=/scan" className="btn-primary">Sign up — free</Link>
+            <Link href="/login?next=/scan" className="btn-ghost">Log in</Link>
+          </div>
+        </div>
+      )}
+
+      {phase === "capture" && !needSignup && (
         <div className="animate-fade-up space-y-4">
+          {user && (
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+              <label className="text-xs text-white/60">Whose palm is this?</label>
+              <input
+                value={personName}
+                onChange={(e) => setPersonName(e.target.value)}
+                placeholder="e.g. Me, Mom, Alex…"
+                maxLength={40}
+                className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 text-white outline-none focus:border-cosmic-400"
+              />
+              <p className="mt-1 text-xs text-white/40">Saved by name so each person keeps their own reading.</p>
+            </div>
+          )}
           <PalmCapture onImage={handleImage} />
           <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/75">
             <input
@@ -344,7 +396,9 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
 
           <div className="flex items-center justify-between">
             <h1 className="font-display text-2xl font-semibold">
-              Your Palm Reading
+              {user && personName.trim()
+                ? `${personName.trim()}'s Palm Reading`
+                : "Your Palm Reading"}
             </h1>
             <span className="chip">{result.handedness} hand</span>
           </div>
