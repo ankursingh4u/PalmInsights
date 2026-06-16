@@ -37,12 +37,6 @@ const REPORT = [
   { icon: "👶", t: "Family & Children" },
 ];
 
-const STEPS = [
-  { n: "1", title: "Capture your palm", body: "Snap a photo or upload one. Open hand, good lighting." },
-  { n: "2", title: "AI reads your lines", body: "Our AI confirms it's a palm and reads your real lines." },
-  { n: "3", title: "Read your story", body: "Get instant, personalized insights — free, no sign-up." },
-];
-
 export default function HomePage() {
   return (
     <main className="mx-auto max-w-5xl px-5">
@@ -123,24 +117,6 @@ export default function HomePage() {
                 <span className="chip">{l.free ? "Free" : "Premium"}</span>
               </div>
               <p className="mt-2 text-sm text-white/60">{l.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="py-10">
-        <h2 className="text-center font-display text-2xl font-semibold sm:text-3xl">
-          How it works
-        </h2>
-        <div className="mt-8 grid gap-6 sm:grid-cols-3">
-          {STEPS.map((s) => (
-            <div key={s.n} className="card text-center">
-              <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-cosmic-500/20 font-display text-lg font-bold text-cosmic-200">
-                {s.n}
-              </div>
-              <h3 className="mt-4 font-semibold">{s.title}</h3>
-              <p className="mt-2 text-sm text-white/60">{s.body}</p>
             </div>
           ))}
         </div>
