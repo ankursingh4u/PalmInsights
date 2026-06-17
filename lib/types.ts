@@ -38,7 +38,7 @@ export interface PalmLine {
   interpretation: string[];
 }
 
-/** Premium narrative sections (destiny / career / wealth / love / marriage…). */
+/** Premium narrative sections (destiny / career / wealth / luck / love / vibe). */
 export interface ReportSection {
   title: string;
   body: string[];
@@ -57,9 +57,9 @@ export interface PremiumReport {
   destiny: ReportSection;
   career: ReportSection;
   wealth: ReportSection;
+  luck: ReportSection;
   love: ReportSection;
-  marriage: ReportSection;
-  children: ReportSection;
+  vibe: ReportSection;
 }
 
 /** Result of an analysis. Premium lines/report are present only when unlocked. */

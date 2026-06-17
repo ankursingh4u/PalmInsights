@@ -121,7 +121,7 @@ export async function generateShareCard(
     ctx.fillText("🔒 Unlock the full reading", W / 2, y + 62);
     ctx.fillStyle = "rgba(255,255,255,0.7)";
     ctx.font = "400 30px Georgia, serif";
-    ctx.fillText("Money · Marriage · Children · Destiny", W / 2, y + 110);
+    ctx.fillText("Money · Luck · Love · Career", W / 2, y + 110);
     y += 200;
   }
 

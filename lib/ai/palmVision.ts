@@ -46,9 +46,9 @@ const ReportSchema = z.object({
   destiny: ReportSectionSchema,
   career: ReportSectionSchema,
   wealth: ReportSectionSchema,
+  luck: ReportSectionSchema,
   love: ReportSectionSchema,
-  marriage: ReportSectionSchema,
-  children: ReportSectionSchema,
+  vibe: ReportSectionSchema,
 });
 
 const VisionResultSchema = z.object({
@@ -112,11 +112,11 @@ function jsonSchema(includeReport: boolean) {
         destiny: section,
         career: section,
         wealth: section,
+        luck: section,
         love: section,
-        marriage: section,
-        children: section,
+        vibe: section,
       },
-      required: ["highlights", "destiny", "career", "wealth", "love", "marriage", "children"],
+      required: ["highlights", "destiny", "career", "wealth", "luck", "love", "vibe"],
     };
     required.push("report");
   }
@@ -142,15 +142,15 @@ function userPrompt(keys: LineKey[], includeReport: boolean): string {
   const names = keys.join(", ");
   let p = `First decide if this image clearly shows a readable human palm. If not, set isPalm=false, give a short reason, and return an empty lines array. If it IS a clear palm, set isPalm=true and read these lines: ${names}. For each line give a pattern, an integer confidence (0-100), a one-line summary, and a 2-4 bullet interpretation based on what you actually observe in this specific palm.`;
   if (includeReport) {
-    p += ` Also produce a premium "report" synthesized from the head, fate, heart and life lines (and overall hand shape) you observe in THIS palm. It must contain:
+    p += ` Also produce a premium "report" synthesized from the head, fate, heart and life lines (and overall hand shape) you observe in THIS palm. Audience: Gen-Z (US/EU). Tone: hyped, confident, manifestation / "main-character energy" — about career, money, luck and love (NOT marriage or kids). It must contain:
 - highlights: { archetype (a catchy 2-4 word palm personality type), luckyNumber, luckyColor, luckyDay (a weekday) } — make these feel personal to this palm.
-- destiny ("Your Destiny"): the big-picture life story.
-- career ("Career & Success"): work strengths, ideal fields, a turning point.
-- wealth ("Money & Wealth"): earning style, financial outlook, when prosperity peaks.
-- love ("Love & Relationships"): emotional nature and how you connect.
-- marriage ("Marriage & Partnership"): partnership timing, what a lasting bond looks like for you.
-- children ("Family & Children"): family life, nurturing style, and what the lines hint about children.
-Each section is a title plus a vivid 2-3 paragraph body array, warm and second-person. This is lighthearted entertainment — commit to specific, confident, shareable predictions.`;
+- destiny ("Your Path"): the big-picture life story and the era you're stepping into.
+- career ("Career & Success"): work strengths, your zone of genius, when you level up / blow up.
+- wealth ("Money & Wealth"): earning style, financial glow-up, when the money flows.
+- luck ("Luck & Fortune"): your luckiest periods, lucky breaks, unexpected wins / windfalls, what to manifest.
+- love ("Love & Dating"): your romantic energy, attraction, soulmate/connection vibes (dating, not marriage).
+- vibe ("Your Energy & Vibe"): your aura, friendships, social magnetism, and how people experience you.
+Each section is a title plus a vivid 2-3 paragraph body array, second-person. This is lighthearted entertainment — commit to specific, confident, shareable predictions.`;
   }
   return p;
 }

@@ -1,32 +1,32 @@
 "use client";
 
 // Blurred preview of the premium topics — shows users exactly what they're
-// missing (Money / Marriage / Children …) to drive the $5 unlock.
+// missing (Money / Luck / Love / Career …) to drive the $5 unlock.
 
 const TOPICS = [
   {
     icon: "💰",
     title: "Money & Wealth",
     teaser:
-      "Your hand points to wealth that is built rather than handed to you — and your prosperity peaks around your mid-thirties when you back your own judgment and let your skills compound into real security.",
+      "Your hand points to a real financial glow-up — wealth you build by backing your own judgment, with gains that compound fast once you find your lane and your money era switches on.",
   },
   {
-    icon: "💍",
-    title: "Marriage & Partnership",
+    icon: "🍀",
+    title: "Luck & Fortune",
     teaser:
-      "A lasting bond is written into your palm: it deepens with time rather than burning fast. A defining partnership solidifies in your late twenties with someone who feels like a best friend and a teammate at once.",
+      "There's a genuine streak of luck written into your palm — the right opportunity tends to find you at the right moment. Your luckiest windows cluster around the seasons you take a small, bold bet.",
   },
   {
-    icon: "👶",
-    title: "Family & Children",
+    icon: "💕",
+    title: "Love & Dating",
     teaser:
-      "Your lines reveal a warm, protective family nature — the kind of home people feel safe in. The way you nurture is encouraging rather than controlling, and children play a joyful role in your story.",
+      "Your magnetic season is near. You pull people in with genuine energy, and the strongest connection comes with someone who matches your honesty — less chasing, more clicking.",
   },
   {
     icon: "🌌",
-    title: "Your Destiny + Lucky Highlights",
+    title: "Career, Destiny + Lucky Highlights",
     teaser:
-      "Discover your palm personality type and your lucky number, color and day — plus the full destiny and career arc the threads of your fate line are quietly weaving toward.",
+      "Discover your palm personality type and your lucky number, color and day — plus the career glow-up and main-character era the threads of your fate line are quietly weaving toward.",
   },
 ];
 

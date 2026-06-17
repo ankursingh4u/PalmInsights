@@ -394,33 +394,33 @@ function buildReport(lines: Record<LineKey, PalmLine>, f: PalmFeatures): Premium
     wealth: {
       title: "Money & Wealth",
       body: [
-        `Your hand points to wealth that is earned and built rather than handed to you — steady gains that compound as you back your own judgment.`,
-        `Money tends to follow your skills, so the strongest financial leaps come right after you invest in mastering something. Your prosperity peaks in your ${Math.floor(decade / 10) * 10 === 20 ? "30s" : "mid-30s onward"}.`,
-        `Guard against impulsive spending around big wins; channel a slice into long-term assets and your security grows quietly and surely.`,
+        `Your hand points to a real financial glow-up — wealth you build by backing your own judgment, with gains that compound fast once you find your lane.`,
+        `Money follows your skills, so the biggest leaps come right after you go all-in on mastering something. Your money era really turns on in your ${Math.floor(decade / 10) * 10 === 20 ? "mid-20s to 30s" : "30s"}.`,
+        `Watch the impulse spends around big wins — funnel a slice into long-term plays and your bag grows quietly but seriously.`,
+      ],
+    },
+    luck: {
+      title: "Luck & Fortune",
+      body: [
+        `There's a genuine streak of luck written into your palm — you're someone the right opportunity tends to find at the right moment.`,
+        `Your luckiest windows cluster around your ${decade}th year and the seasons when you take a small, bold bet. Unexpected wins and lucky breaks favor you when you stay open.`,
+        `Manifestation works overtime for you: name what you want clearly, act on the first nudge, and watch fortune meet you halfway.`,
       ],
     },
     love: {
-      title: "Love & Relationships",
+      title: "Love & Dating",
       body: [
         `In love, your heart line marks you as ${heart.summary.toLowerCase().replace(/\.$/, "")}.`,
-        `You connect most deeply with partners who respect both your independence and your need for genuine emotional honesty.`,
-        `Your strongest relationships are built slowly and intentionally — depth over speed, trust over intensity.`,
+        `You pull people in with genuine energy — the strongest connections come with someone who respects your independence and matches your honesty.`,
+        `Your magnetic season is near; lead with realness over games, and the right person feels less like chasing and more like clicking.`,
       ],
     },
-    marriage: {
-      title: "Marriage & Partnership",
+    vibe: {
+      title: "Your Energy & Vibe",
       body: [
-        `Your marriage line hints at a committed bond that deepens with time rather than burning fast and fading.`,
-        `A meaningful partnership solidifies in your late ${Math.floor(decade / 10) * 10 === 20 ? "20s" : "20s–30s"} — likely with someone who feels like both a best friend and a teammate.`,
-        `Lasting harmony comes when you choose honesty over keeping the peace; your bond thrives on shared goals and mutual respect.`,
-      ],
-    },
-    children: {
-      title: "Family & Children",
-      body: [
-        `Your palm suggests a warm, protective family nature — you create the kind of home people feel safe in.`,
-        `The lines hint at children playing a joyful role in your life story, with a nurturing style that is encouraging rather than controlling.`,
-        `Whatever shape your family takes, your gift is making the people closest to you feel deeply seen and supported.`,
+        `Your aura is the quietly magnetic kind — people remember how you made them feel, and your circle trusts you instinctively.`,
+        `You're the main character of your story with a strong supporting cast: loyal friendships built on realness, not numbers.`,
+        `Lean into your natural vibe instead of shrinking it — your energy is exactly what draws the right people and opportunities in.`,
       ],
     },
   };

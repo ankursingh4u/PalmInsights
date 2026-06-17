@@ -2,15 +2,15 @@
 
 import type { PremiumReport, ReportSection } from "@/lib/types";
 
-type SectionKey = "destiny" | "career" | "wealth" | "love" | "marriage" | "children";
+type SectionKey = "destiny" | "career" | "wealth" | "luck" | "love" | "vibe";
 
 const SECTIONS: { key: SectionKey; icon: string }[] = [
   { key: "destiny", icon: "🌌" },
   { key: "career", icon: "💼" },
   { key: "wealth", icon: "💰" },
-  { key: "love", icon: "💗" },
-  { key: "marriage", icon: "💍" },
-  { key: "children", icon: "👶" },
+  { key: "luck", icon: "🍀" },
+  { key: "love", icon: "💕" },
+  { key: "vibe", icon: "✨" },
 ];
 
 export function ReportView({ report }: { report: PremiumReport }) {

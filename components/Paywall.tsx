@@ -19,11 +19,11 @@ export function Paywall({ priceLabel, busy, error, onUnlock }: Props) {
       <ul className="mx-auto mt-5 grid max-w-sm gap-2 text-left text-sm text-white/85">
         {[
           "Head & Fate lines — your mind & life direction",
-          "💰 Money & Wealth outlook",
-          "💍 Marriage & partnership timing",
-          "👶 Family & children insights",
-          "🌌 Full destiny + career report",
-          "💗 Love compatibility analysis",
+          "💰 Money & Wealth glow-up",
+          "🍀 Luck & Fortune — your lucky breaks",
+          "💼 Career & Success report",
+          "💕 Love & Dating + crush compatibility",
+          "✨ Your energy, vibe & destiny",
           "✦ Your palm personality type + lucky number, color & day",
         ].map((f) => (
           <li key={f} className="flex items-center gap-2">

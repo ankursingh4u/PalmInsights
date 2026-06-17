@@ -16,10 +16,10 @@ const LINES = [
 const FEATURES = [
   { icon: "🤚", title: "Real AI palm reading", body: "Our AI looks at your actual photo and reads your real lines — every palm is different." },
   { icon: "🧠", title: "Knows a real palm", body: "It verifies it's a genuine palm first, so you get a true reading, never a fake one." },
-  { icon: "💰", title: "Money & Wealth", body: "Your earning style, financial outlook, and when prosperity peaks." },
-  { icon: "💍", title: "Marriage & Partnership", body: "Partnership timing and what a lasting bond looks like for you." },
-  { icon: "👶", title: "Family & Children", body: "Your nurturing style and what the lines hint about family." },
-  { icon: "🌌", title: "Destiny & Career", body: "Your big-picture life story plus career strengths and turning points." },
+  { icon: "💰", title: "Money & Wealth", body: "Your earning style, financial glow-up, and when the money flows." },
+  { icon: "🍀", title: "Luck & Fortune", body: "Your luckiest periods, lucky breaks and what to manifest." },
+  { icon: "💼", title: "Career & Success", body: "Your zone of genius and when you level up." },
+  { icon: "🌌", title: "Destiny & Vibe", body: "Your life path, energy and the main-character era you're entering." },
   { icon: "💕", title: "You + Your Crush", body: "Scan two palms (or a birth date) for a love compatibility match score." },
   { icon: "🌙", title: "Daily palm guidance", body: "What to wear, your lucky time, what's good today — fresh every day." },
   { icon: "✦", title: "Your palm personality", body: "A catchy palm 'type' with your lucky number, color & day." },
@@ -29,12 +29,12 @@ const FEATURES = [
 ];
 
 const REPORT = [
-  { icon: "🌌", t: "Destiny" },
+  { icon: "🌌", t: "Your Path" },
   { icon: "💼", t: "Career & Success" },
   { icon: "💰", t: "Money & Wealth" },
-  { icon: "💗", t: "Love" },
-  { icon: "💍", t: "Marriage" },
-  { icon: "👶", t: "Family & Children" },
+  { icon: "🍀", t: "Luck & Fortune" },
+  { icon: "💕", t: "Love & Dating" },
+  { icon: "✨", t: "Energy & Vibe" },
 ];
 
 export default function HomePage() {
@@ -64,9 +64,9 @@ export default function HomePage() {
           </span>
         </h1>
         <p className="mt-6 max-w-xl animate-fade-up text-lg text-white/70">
-          A real AI reads your actual palm and reveals your life, love, money,
-          marriage, family and destiny — plus a daily guide and your lucky
-          number, color &amp; day.
+          A real AI reads your actual palm and reveals your love, money, luck,
+          career and destiny — plus a daily guide and your lucky number, color
+          &amp; day.
         </p>
         <div className="mt-9 flex animate-fade-up flex-col items-center gap-3 sm:flex-row">
           <Link href="/scan" className="btn-primary animate-glow text-lg">
@@ -129,8 +129,8 @@ export default function HomePage() {
           Unlock the full picture
         </h2>
         <p className="mx-auto mt-3 max-w-lg text-white/70">
-          Six personalized chapters read from your palm — money, marriage,
-          children and more — plus your palm personality type and lucky
+          Six personalized chapters read from your palm — money, luck, love,
+          career and more — plus your palm personality type and lucky
           highlights. One-time {priceLabel()}.
         </p>
         <div className="mx-auto mt-7 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
