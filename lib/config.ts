@@ -67,6 +67,7 @@ export const config = {
   email: {
     resendKey: process.env.RESEND_API_KEY || "",
     from: process.env.EMAIL_FROM || "PalmInsight <onboarding@resend.dev>",
+    replyTo: process.env.EMAIL_REPLY_TO || "",
     cronSecret: process.env.CRON_SECRET || "",
   },
 };

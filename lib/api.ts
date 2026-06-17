@@ -55,7 +55,10 @@ export function analyze(
 
 // --- auth + account ---------------------------------------------------------
 
-export function signup(email: string, password: string): Promise<{ user: UserPublic; isAdmin: boolean }> {
+export function signup(
+  email: string,
+  password: string
+): Promise<{ user?: UserPublic; isAdmin?: boolean; needsVerify?: boolean; email?: string }> {
   return postJSON("/api/auth/signup", { email, password });
 }
 export function login(email: string, password: string): Promise<{ user: UserPublic; isAdmin: boolean }> {

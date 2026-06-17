@@ -22,6 +22,7 @@ export async function sendEmail(args: {
         to: args.to,
         subject: args.subject,
         html: args.html,
+        ...(config.email.replyTo ? { reply_to: config.email.replyTo } : {}),
       }),
     });
     if (!res.ok) return { ok: false, error: `Resend ${res.status}: ${await res.text()}` };
@@ -29,6 +30,29 @@ export async function sendEmail(args: {
   } catch (err) {
     return { ok: false, error: (err as Error).message };
   }
+}
+
+/** Branded HTML for the email-confirmation message. */
+export function renderVerifyEmail(verifyUrl: string): string {
+  return `<!doctype html><html><body style="margin:0;background:#0b0614;font-family:Georgia,'Times New Roman',serif">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b0614;padding:24px 0"><tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:linear-gradient(160deg,#150a2e,#0b0614);border:1px solid #ffffff14;border-radius:20px">
+      <tr><td style="padding:32px 32px 8px">
+        <div style="color:#c4b5fd;font-size:14px;letter-spacing:.12em">✋ PALMINSIGHT</div>
+        <div style="color:#fff;font-size:26px;font-weight:700;margin-top:10px">Confirm your email</div>
+      </td></tr>
+      <tr><td style="padding:8px 32px">
+        <p style="color:#cbd5e1;font-size:16px;line-height:1.6;margin:0">Welcome! Tap the button below to confirm your email and start reading palms for everyone you know.</p>
+      </td></tr>
+      <tr><td align="center" style="padding:24px 32px 8px">
+        <a href="${verifyUrl}" style="display:inline-block;background:#8b5cf6;color:#fff;text-decoration:none;font-size:16px;font-weight:700;padding:15px 34px;border-radius:999px">Confirm my email →</a>
+      </td></tr>
+      <tr><td style="padding:8px 32px 32px">
+        <p style="color:#64748b;font-size:12px;line-height:1.6;margin:16px 0 0">If the button doesn't work, paste this link into your browser:<br><span style="color:#a78bfa;word-break:break-all">${verifyUrl}</span></p>
+        <p style="color:#475569;font-size:12px;margin:14px 0 0">If you didn't sign up for PalmInsight, you can ignore this email.</p>
+      </td></tr>
+    </table>
+  </td></tr></table></body></html>`;
 }
 
 const esc = (s: string) =>

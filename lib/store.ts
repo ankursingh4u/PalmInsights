@@ -44,6 +44,8 @@ interface Store {
   createUser(user: User): Promise<void>;
   getUserByEmail(email: string): Promise<User | null>;
   getUserById(id: string): Promise<User | null>;
+  getUserByVerifyToken(token: string): Promise<User | null>;
+  setVerified(userId: string): Promise<void>;
   countUsers(): Promise<number>;
 
   // payments
@@ -119,6 +121,17 @@ class MemoryStore implements Store {
   }
   async getUserById(id: string) {
     return this.users.get(id) ?? null;
+  }
+  async getUserByVerifyToken(token: string) {
+    for (const u of this.users.values()) if (u.verifyToken && u.verifyToken === token) return u;
+    return null;
+  }
+  async setVerified(userId: string) {
+    const u = this.users.get(userId);
+    if (u) {
+      u.verified = true;
+      u.verifyToken = null;
+    }
   }
   async countUsers() {
     return this.users.size;
@@ -215,8 +228,24 @@ class SupabaseStore implements Store {
       id: u.id,
       email: u.email.toLowerCase(),
       password_hash: u.passwordHash,
+      verified: u.verified ?? false,
+      verify_token: u.verifyToken ?? null,
       created_at: u.createdAt,
     });
+  }
+  async getUserByVerifyToken(token: string) {
+    const { data } = await this.c
+      .from("palm_users")
+      .select("*")
+      .eq("verify_token", token)
+      .maybeSingle();
+    return data ? this.userRow(data) : null;
+  }
+  async setVerified(userId: string) {
+    await this.c
+      .from("palm_users")
+      .update({ verified: true, verify_token: null })
+      .eq("id", userId);
   }
   async getUserByEmail(email: string) {
     const { data } = await this.c
@@ -322,6 +351,8 @@ class SupabaseStore implements Store {
       id: d.id,
       email: d.email,
       passwordHash: d.password_hash,
+      verified: d.verified ?? undefined,
+      verifyToken: d.verify_token ?? null,
       createdAt: d.created_at,
     };
   }

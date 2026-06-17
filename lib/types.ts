@@ -103,6 +103,8 @@ export interface User {
   id: string;
   email: string;
   passwordHash: string; // scrypt: salt:hash
+  verified?: boolean; // email confirmed
+  verifyToken?: string | null; // pending email-verification token
   createdAt: string;
 }
 

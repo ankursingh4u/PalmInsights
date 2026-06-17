@@ -32,6 +32,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Incorrect email or password." }, { status: 401 });
   }
 
+  // Block sign-in until the email is confirmed.
+  if (user.verified === false) {
+    return NextResponse.json(
+      { error: "Please confirm your email first — check your inbox for the confirmation link." },
+      { status: 403 }
+    );
+  }
+
   // Claim any scans created while anonymous on this device.
   const anonId = getAnonId();
   if (anonId) await store.reassignOwner(anonId, user.id);

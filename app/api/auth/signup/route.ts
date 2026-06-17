@@ -12,6 +12,8 @@ import {
   isAdminEmail,
 } from "@/lib/auth";
 import { enforceRateLimit } from "@/lib/ratelimit";
+import { config, emailEnabled } from "@/lib/config";
+import { sendEmail, renderVerifyEmail } from "@/lib/email";
 import type { User } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -46,18 +48,41 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // When email delivery is configured, require email confirmation before the
+  // account is active. Otherwise (dev/no email), sign in immediately.
+  const requireVerify = emailEnabled;
+  const verifyToken = requireVerify ? crypto.randomUUID().replace(/-/g, "") : null;
+
   const user: User = {
     id: crypto.randomUUID(),
     email,
     passwordHash: hashPassword(password),
+    verified: !requireVerify,
+    verifyToken,
     createdAt: new Date().toISOString(),
   };
   await store.createUser(user);
 
-  // Claim any scans created while anonymous.
+  if (requireVerify && verifyToken) {
+    const verifyUrl = `${config.baseUrl}/api/auth/verify?token=${verifyToken}`;
+    const res = await sendEmail({
+      to: email,
+      subject: "Confirm your email — PalmInsight 🔮",
+      html: renderVerifyEmail(verifyUrl),
+    });
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: "Couldn't send the confirmation email. Please try again." },
+        { status: 502 }
+      );
+    }
+    // No session yet — they must confirm via the email link.
+    return NextResponse.json({ needsVerify: true, email });
+  }
+
+  // No-email mode: claim anonymous scans and sign in right away.
   const anonId = getAnonId();
   if (anonId) await store.reassignOwner(anonId, user.id);
-
   setSession(user.id);
   return NextResponse.json({ user: toPublic(user), isAdmin: isAdminEmail(email) });
 }

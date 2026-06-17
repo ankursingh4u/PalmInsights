@@ -10,6 +10,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(null);
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/scan";
@@ -19,8 +20,16 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     setBusy(true);
     setError(null);
     try {
-      if (mode === "signup") await signup(email, password);
-      else await login(email, password);
+      if (mode === "signup") {
+        const res = await signup(email, password);
+        if (res.needsVerify) {
+          setSentTo(res.email || email); // show "check your email"
+          setBusy(false);
+          return;
+        }
+      } else {
+        await login(email, password);
+      }
       router.push(next);
       router.refresh();
     } catch (err) {
@@ -30,6 +39,23 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   }
 
   const isSignup = mode === "signup";
+
+  // After signup with email verification — confirmation screen.
+  if (sentTo) {
+    return (
+      <div className="card mx-auto mt-8 max-w-md space-y-3 text-center">
+        <div className="text-4xl">📩</div>
+        <h1 className="font-display text-2xl font-semibold">Confirm your email</h1>
+        <p className="text-sm text-white/70">
+          We sent a confirmation link to <strong className="text-white">{sentTo}</strong>.
+          Tap it to activate your account and start reading palms for everyone.
+        </p>
+        <p className="text-xs text-white/40">
+          Don&apos;t see it? Check spam, or wait a minute and refresh your inbox.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={submit} className="card mx-auto mt-8 max-w-md space-y-4">
