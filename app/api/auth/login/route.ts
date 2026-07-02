@@ -4,6 +4,7 @@ import { store } from "@/lib/store";
 import {
   verifyPassword,
   setSession,
+  issueSessionToken,
   getAnonId,
   toPublic,
   isAdminEmail,
@@ -45,5 +46,11 @@ export async function POST(req: NextRequest) {
   if (anonId) await store.reassignOwner(anonId, user.id);
 
   setSession(user.id);
-  return NextResponse.json({ user: toPublic(user), isAdmin: isAdminEmail(email) });
+  // token: for the native app (bearer auth). The website ignores it and uses
+  // the httpOnly cookie set above.
+  return NextResponse.json({
+    user: toPublic(user),
+    isAdmin: isAdminEmail(email),
+    token: issueSessionToken(user.id),
+  });
 }

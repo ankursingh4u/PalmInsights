@@ -10,11 +10,41 @@ import type {
 } from "./types";
 
 // Thin client-side wrappers around the API routes.
+//
+// API base: empty on the website (same-origin relative calls, unchanged). For
+// the BUNDLED app build, set NEXT_PUBLIC_API_BASE to the hosted backend (e.g.
+// https://palm-drab.vercel.app) so the on-device UI calls the live API. Auth in
+// the app is sent as a bearer token (stored on-device) since it's cross-origin.
+const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "").replace(/\/$/, "");
+
+/** Prefix a relative /api path with the configured backend base. */
+export function apiUrl(path: string): string {
+  return path.startsWith("/") ? `${API_BASE}${path}` : path;
+}
+
+/** Bearer token for the bundled app (no-op on the cookie-authed website). */
+function authToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem("palm:auth") || null;
+  } catch {
+    return null;
+  }
+}
+
+function headers(json: boolean): Record<string, string> {
+  const h: Record<string, string> = {};
+  if (json) h["Content-Type"] = "application/json";
+  const t = authToken();
+  if (t) h["Authorization"] = `Bearer ${t}`;
+  return h;
+}
 
 async function postJSON<T>(url: string, body: unknown): Promise<T> {
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl(url), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headers(true),
+    credentials: "include",
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
@@ -25,7 +55,10 @@ async function postJSON<T>(url: string, body: unknown): Promise<T> {
 }
 
 async function getJSON<T>(url: string): Promise<T> {
-  const res = await fetch(url);
+  const res = await fetch(apiUrl(url), {
+    headers: headers(false),
+    credentials: "include",
+  });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error((data as { error?: string }).error || `Request failed (${res.status})`);
@@ -76,9 +109,10 @@ export function history(): Promise<{ scans: ScanSummary[]; signedIn: boolean }> 
 }
 export function trackEvent(name: "paywall_viewed" | "share_created", scanId?: string): void {
   // fire-and-forget
-  void fetch("/api/event", {
+  void fetch(apiUrl("/api/event"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ name, scanId }),
   }).catch(() => {});
 }

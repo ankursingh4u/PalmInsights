@@ -5,6 +5,7 @@ import { store } from "@/lib/store";
 import {
   hashPassword,
   setSession,
+  issueSessionToken,
   validateEmail,
   validatePassword,
   getAnonId,
@@ -84,5 +85,9 @@ export async function POST(req: NextRequest) {
   const anonId = getAnonId();
   if (anonId) await store.reassignOwner(anonId, user.id);
   setSession(user.id);
-  return NextResponse.json({ user: toPublic(user), isAdmin: isAdminEmail(email) });
+  return NextResponse.json({
+    user: toPublic(user),
+    isAdmin: isAdminEmail(email),
+    token: issueSessionToken(user.id),
+  });
 }

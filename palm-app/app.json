@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "PalmInsight",
+    "slug": "palminsight",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "palminsight",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "backgroundColor": "#07040f",
+    "android": {
+      "package": "live.bolddev.palminsight"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "live.bolddev.palminsight"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "PalmInsight needs your photos to read a palm you've already captured.",
+          "cameraPermission": "PalmInsight uses the camera to scan your palm."
+        }
+      ]
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { config } from "./config";
 import type { User, UserPublic } from "./types";
 
@@ -60,8 +60,17 @@ function readToken<T>(token: string | undefined): T | null {
 
 // --- session management (call from route handlers) --------------------------
 
+/**
+ * Issue a signed session token for a user. The website stores it in an
+ * httpOnly cookie (setSession); the native app stores it on-device and sends
+ * it as `Authorization: Bearer <token>`. Same token, same secret, same DB.
+ */
+export function issueSessionToken(userId: string): string {
+  return makeToken({ uid: userId, iat: Date.now() });
+}
+
 export function setSession(userId: string): void {
-  cookies().set(SESSION_COOKIE, makeToken({ uid: userId, iat: Date.now() }), {
+  cookies().set(SESSION_COOKIE, issueSessionToken(userId), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -70,14 +79,30 @@ export function setSession(userId: string): void {
   });
 }
 
+/** Read a bearer session token from the Authorization header, if present. */
+function bearerUserId(): string | null {
+  try {
+    const auth = headers().get("authorization");
+    if (auth?.startsWith("Bearer ")) {
+      return readToken<{ uid: string }>(auth.slice(7).trim())?.uid ?? null;
+    }
+  } catch {
+    /* headers() unavailable outside a request scope */
+  }
+  return null;
+}
+
 export function clearSession(): void {
   cookies().set(SESSION_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
 }
 
 export function getSessionUserId(): string | null {
+  // Native app (bearer token) first, then website session cookie. This makes
+  // every already-gated endpoint work for the app with no per-route changes.
+  const fromBearer = bearerUserId();
+  if (fromBearer) return fromBearer;
   const token = cookies().get(SESSION_COOKIE)?.value;
-  const data = readToken<{ uid: string }>(token);
-  return data?.uid ?? null;
+  return readToken<{ uid: string }>(token)?.uid ?? null;
 }
 
 /** Read the anon id, creating + setting the cookie if missing. */
