@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { AppShell } from "@/components/app/AppShell";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -33,6 +34,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover", // enables env(safe-area-inset-*) for the app chrome
 };
 
 export default function RootLayout({
@@ -45,6 +47,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <div className="starfield" aria-hidden />
         {children}
+        <AppShell />
       </body>
     </html>
   );

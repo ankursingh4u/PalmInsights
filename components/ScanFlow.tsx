@@ -12,6 +12,7 @@ import { Paywall } from "./Paywall";
 import { PremiumTeaser } from "./PremiumTeaser";
 import { ReportView } from "./ReportView";
 import { CompatibilityPanel } from "./CompatibilityPanel";
+import { AstrologerChat } from "./AstrologerChat";
 import { DailyHoroscope } from "./DailyHoroscope";
 import { SharePanel } from "./SharePanel";
 import { preloadDetector, detectHand } from "@/lib/mediapipe";
@@ -444,7 +445,10 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
               </div>
               <ReportView report={result.report} />
               {scanId && token && (
-                <CompatibilityPanel scanId={scanId} token={token} />
+                <>
+                  <AstrologerChat scanId={scanId} token={token} />
+                  <CompatibilityPanel scanId={scanId} token={token} />
+                </>
               )}
             </>
           )}

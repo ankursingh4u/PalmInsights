@@ -1,6 +1,7 @@
 node_modules
 .next
 out
+.idea
 .env
 .env.local
 *.log
@@ -16,3 +17,4 @@ tsconfig.tsbuildinfo
 *.pdf
 PRODUCT_OVERVIEW.md
 TESTING.md
+LAUNCH_GUIDE.md

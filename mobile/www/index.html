@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>PalmInsight</title>
+    <style>
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: #0b0714;
+        color: #e9e2ff;
+        font-family: system-ui, -apple-system, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      .wrap { opacity: 0.85; }
+      .logo { font-size: 44px; }
+      .msg { margin-top: 14px; font-size: 15px; opacity: 0.7; }
+    </style>
+  </head>
+  <body>
+    <!--
+      Fallback screen. In normal operation the app loads the live site set in
+      capacitor.config.ts (server.url). This page shows only if the site is
+      unreachable (offline). Keep it tiny.
+    -->
+    <div class="wrap">
+      <div class="logo">🔮</div>
+      <div class="msg">Connecting to PalmInsight…<br />Check your connection.</div>
+    </div>
+  </body>
+</html>

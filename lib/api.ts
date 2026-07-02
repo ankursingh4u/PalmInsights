@@ -2,6 +2,7 @@
 
 import type {
   AnalysisResult,
+  ChatMessage,
   CompatibilityResult,
   Landmark,
   ScanSummary,
@@ -100,6 +101,14 @@ export function fetchReport(
   token: string
 ): Promise<{ result: AnalysisResult }> {
   return postJSON("/api/report", { scanId, token });
+}
+
+export function askAstrologer(
+  scanId: string,
+  token: string,
+  messages: ChatMessage[]
+): Promise<{ reply: string }> {
+  return postJSON("/api/chat", { scanId, token, messages });
 }
 
 export function fetchHoroscope(

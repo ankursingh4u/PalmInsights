@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export function SiteFooter() {
   return (
-    <footer className="mt-20 border-t border-white/10 py-8 text-center text-sm text-white/50">
+    <footer className="site-footer mt-20 border-t border-white/10 py-8 text-center text-sm text-white/50">
       <div className="mx-auto max-w-4xl px-5">
         <p>
           PalmInsight is for entertainment and self-reflection. Readings are

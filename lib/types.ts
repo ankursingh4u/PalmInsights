@@ -122,9 +122,15 @@ export interface Payment {
   ownerKey: string;
   amountCents: number;
   currency: string;
-  provider: "polar" | "mock";
+  provider: "polar" | "mock" | "google_play" | "app_store";
   status: "paid";
   createdAt: string;
+}
+
+/** A single turn in an "Ask the Astrologer" conversation. */
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
 }
 
 /** Analytics event for conversion tracking. */
@@ -134,6 +140,7 @@ export type AnalyticsEventName =
   | "checkout_started"
   | "premium_unlocked"
   | "compatibility_run"
+  | "astrologer_question"
   | "share_created";
 
 export interface AnalyticsEvent {

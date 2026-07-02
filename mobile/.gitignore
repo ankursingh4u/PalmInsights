@@ -1,0 +1,15 @@
+# Capacitor mobile shell — ignore build artifacts and generated native projects.
+node_modules/
+
+# Generated native projects (regenerate with `npx cap add android` / `add ios`).
+# Keep these ignored until you start customizing native code, signing, or icons;
+# then remove the relevant line and commit the platform folder.
+android/
+ios/
+
+# Build outputs
+*.apk
+*.aab
+*.keystore
+*.jks
+.gradle/

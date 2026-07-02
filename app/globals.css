@@ -258,3 +258,99 @@ body > *:not(.starfield) {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ===========================================================================
+   APP MODE — native chrome shown only inside the Capacitor shell (or ?app=1).
+   Adds a fixed top app bar + bottom tab bar, hides the marketing header/footer,
+   and reserves safe-area space so the OS status bar and gesture bar are never
+   covered. The exact same web app powers the site and the store app.
+   =========================================================================== */
+
+:root {
+  --app-header-h: 54px;
+  --app-tabbar-h: 62px;
+}
+
+/* Hide the website's marketing header/footer when in app mode. */
+.app-mode main > header {
+  display: none;
+}
+.app-mode .site-footer {
+  display: none;
+}
+
+/* Reserve room for the fixed native chrome + device safe areas. */
+.app-mode main {
+  padding-top: calc(var(--app-header-h) + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(var(--app-tabbar-h) + env(safe-area-inset-bottom, 0px) + 10px);
+}
+
+/* --- top app bar --- */
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: calc(var(--app-header-h) + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) 16px 0;
+  background: rgba(7, 4, 15, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* --- bottom tab bar --- */
+.app-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: rgba(7, 4, 15, 0.82);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.app-tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: var(--app-tabbar-h);
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.2s ease, transform 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.app-tab:active {
+  transform: scale(0.93);
+}
+.app-tab--active {
+  color: #c4b5fd;
+}
+.app-tab__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.app-tab__dot {
+  position: absolute;
+  top: 6px;
+  height: 4px;
+  width: 4px;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.app-tab--active .app-tab__dot {
+  opacity: 1;
+  box-shadow: 0 0 8px 1px currentColor;
+}
