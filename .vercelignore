@@ -1,0 +1,9 @@
+# Vercel only builds the Next.js website. Exclude the ROOT mobile-app projects
+# (leading slash = root only, so it does NOT match app/api/mobile/*).
+/palm-app
+/mobile
+*.apk
+*.aab
+*.keystore
+*.docx
+*.pdf
