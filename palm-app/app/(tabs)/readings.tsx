@@ -63,6 +63,7 @@ export default function Readings() {
               <Text style={{ fontSize: 44 }}>🔮</Text>
               <Text style={styles.emptyText}>No readings yet.</Text>
               <Pressable onPress={() => router.push("/(tabs)/scan")} style={styles.cta}>
+                <Ionicons name="scan" color="#fff" size={18} />
                 <Text style={styles.ctaText}>Scan your palm</Text>
               </Pressable>
             </View>
@@ -99,10 +100,10 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   empty: { alignItems: "center", gap: space.md, paddingTop: 80 },
   emptyText: { color: colors.textDim, fontSize: font.body },
-  cta: { backgroundColor: colors.cosmic600, paddingHorizontal: space.xl, paddingVertical: 12, borderRadius: 999, marginTop: space.sm },
+  cta: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.cosmic600, paddingHorizontal: space.xl, paddingVertical: 12, borderRadius: 999, marginTop: space.sm },
   ctaText: { color: "#fff", fontWeight: "700" },
   row: { flexDirection: "row", alignItems: "center", gap: space.md },
-  avatar: { height: 40, width: 40, borderRadius: 20, backgroundColor: "rgba(139,92,246,0.22)", alignItems: "center", justifyContent: "center" },
+  avatar: { height: 40, width: 40, borderRadius: 20, backgroundColor: colors.cosmicSoft, alignItems: "center", justifyContent: "center" },
   avatarText: { color: colors.cosmic300, fontSize: font.h3, fontWeight: "700" },
   name: { color: colors.text, fontSize: font.body, fontWeight: "700" },
   meta: { color: colors.textFaint, fontSize: font.small, marginTop: 2 },

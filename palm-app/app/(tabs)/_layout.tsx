@@ -11,8 +11,8 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.cosmic300,
-        tabBarInactiveTintColor: "rgba(255,255,255,0.45)",
+        tabBarActiveTintColor: colors.cosmic,
+        tabBarInactiveTintColor: colors.textFaint,
         tabBarStyle: {
           backgroundColor: colors.bgElevated,
           borderTopColor: colors.cardBorder,

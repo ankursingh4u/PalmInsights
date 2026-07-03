@@ -69,8 +69,6 @@ export const api = {
     }>("/api/mobile/scan", { body: { image, handedness } }),
   history: () => request<{ scans: ScanSummary[]; signedIn: boolean }>("/api/history"),
   getScan: (id: string) => request<{ result: AnalysisResult }>(`/api/scan/${id}`),
-  report: (scanId: string, token: string) =>
-    request<{ result: AnalysisResult }>("/api/report", { body: { scanId, token } }),
-  chat: (scanId: string, token: string, messages: ChatMessage[]) =>
-    request<{ reply: string }>("/api/chat", { body: { scanId, token, messages } }),
+  chat: (scanId: string, messages: ChatMessage[]) =>
+    request<{ reply: string }>("/api/mobile/chat", { body: { scanId, messages } }),
 };

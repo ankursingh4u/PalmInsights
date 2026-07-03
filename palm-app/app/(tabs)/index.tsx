@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: colors.bg },
   hi: { color: colors.textDim, fontSize: font.body },
   h1: { color: colors.text, fontSize: 28, fontWeight: "800", marginTop: 4, lineHeight: 34 },
-  hero: { alignItems: "flex-start", gap: 6, backgroundColor: "rgba(124,58,237,0.16)", borderColor: "rgba(167,139,250,0.35)" },
+  hero: { alignItems: "flex-start", gap: 6, backgroundColor: colors.cosmicSoft, borderColor: colors.cosmicSoftBorder },
   heroTitle: { color: colors.text, fontSize: font.h2, fontWeight: "800", marginTop: 4 },
   heroSub: { color: colors.textDim, fontSize: font.body },
   heroCta: {

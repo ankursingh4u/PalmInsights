@@ -73,14 +73,14 @@ export default function Profile() {
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: colors.bg },
-  identity: { flexDirection: "row", alignItems: "center", gap: space.lg, backgroundColor: "rgba(124,58,237,0.16)", borderColor: "rgba(167,139,250,0.35)" },
+  identity: { flexDirection: "row", alignItems: "center", gap: space.lg, backgroundColor: colors.cosmicSoft, borderColor: colors.cosmicSoftBorder },
   bigAvatar: { height: 60, width: 60, borderRadius: 30, backgroundColor: colors.cosmic600, alignItems: "center", justifyContent: "center" },
   bigAvatarText: { color: "#fff", fontSize: 24, fontWeight: "800" },
   name: { color: colors.text, fontSize: font.h2, fontWeight: "800" },
   email: { color: colors.textDim, fontSize: font.small, marginTop: 2 },
   section: { color: colors.textFaint, fontSize: font.small, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: space.sm },
   row: { flexDirection: "row", alignItems: "center", gap: space.md, paddingHorizontal: space.lg, paddingVertical: 14 },
-  rowIcon: { height: 34, width: 34, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" },
+  rowIcon: { height: 34, width: 34, borderRadius: radius.sm, backgroundColor: colors.chipBg, alignItems: "center", justifyContent: "center" },
   rowLabel: { color: colors.text, fontSize: font.body, fontWeight: "600", flex: 1 },
   divider: { height: 1, backgroundColor: colors.cardBorder, marginLeft: 60 },
   footer: { color: colors.textFaint, fontSize: font.tiny, textAlign: "center", lineHeight: 18 },

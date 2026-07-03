@@ -6,15 +6,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { api } from "@/lib/api";
 import type { AnalysisResult } from "@/lib/types";
 import { Card, Chip } from "@/components/ui";
-import { colors, font, radius, space } from "@/lib/theme";
+import { colors, font, radius, shadow, space } from "@/lib/theme";
 
 const PREMIUM = [
   { icon: "🌌", t: "Your Path" },
-  { icon: "💼", t: "Career & Success" },
-  { icon: "💰", t: "Money & Wealth" },
-  { icon: "🍀", t: "Luck & Fortune" },
-  { icon: "💕", t: "Love & Dating" },
-  { icon: "🔮", t: "Ask the Astrologer" },
+  { icon: "💼", t: "Career" },
+  { icon: "💰", t: "Money" },
+  { icon: "🍀", t: "Luck" },
+  { icon: "💕", t: "Love" },
+  { icon: "✨", t: "Your Vibe" },
 ];
 
 export default function Reading() {
@@ -34,16 +34,16 @@ export default function Reading() {
   return (
     <SafeAreaView style={styles.wrap} edges={["top"]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="chevron-back" color={colors.text} size={26} />
+        <Pressable onPress={() => router.back()} hitSlop={10} style={styles.iconBtn}>
+          <Ionicons name="chevron-back" color={colors.text} size={24} />
         </Pressable>
         <Text style={styles.headerTitle}>Your Reading</Text>
-        <View style={{ width: 26 }} />
+        <View style={{ width: 40 }} />
       </View>
 
       {!result && !error && (
         <View style={styles.center}>
-          <ActivityIndicator color={colors.cosmic300} />
+          <ActivityIndicator color={colors.cosmic} />
         </View>
       )}
       {error && (
@@ -55,7 +55,7 @@ export default function Reading() {
       {result && (
         <ScrollView contentContainerStyle={{ padding: space.xl, gap: space.lg }}>
           <View>
-            <Chip label={`${result.handedness} hand`} color={colors.cosmic300} />
+            <Chip label={`${result.handedness} hand`} color={colors.cosmic} />
             <Text style={styles.h1}>Your palm, decoded</Text>
           </View>
 
@@ -69,31 +69,41 @@ export default function Reading() {
               {!!line.summary && <Text style={styles.summary}>{line.summary}</Text>}
               {line.interpretation.map((t, i) => (
                 <View key={i} style={styles.bullet}>
-                  <Text style={{ color: line.color }}>•</Text>
+                  <Ionicons name="ellipse" size={5} color={line.color} style={{ marginTop: 7 }} />
                   <Text style={styles.bulletText}>{t}</Text>
                 </View>
               ))}
             </Card>
           ))}
 
-          {/* Premium teaser */}
-          <Card style={styles.premium}>
-            <Chip label="✦ Deep Report" color={colors.cosmic300} />
-            <Text style={styles.premiumTitle}>Unlock your full story</Text>
+          {/* Talk to the astrologer */}
+          <Pressable onPress={() => router.push(`/chat/${id}`)} style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
+            <View style={styles.astro}>
+              <View style={styles.astroIcon}>
+                <Text style={{ fontSize: 24 }}>🔮</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.astroTitle}>Ask the Astrologer</Text>
+                <Text style={styles.astroSub}>Chat about your reading — love, money, luck…</Text>
+              </View>
+              <Ionicons name="chatbubbles" color="#fff" size={22} />
+            </View>
+          </Pressable>
+
+          {/* Deep report teaser */}
+          <Card style={{ gap: space.sm }}>
+            <Chip label="✦ Deep Report" color={colors.cosmic} />
+            <Text style={styles.premiumTitle}>Your full story</Text>
             <Text style={styles.premiumSub}>
-              Six personalized chapters read from your palm — plus chat with your personal astrologer.
+              Six chapters read from your palm — coming as an in-app unlock.
             </Text>
             <View style={styles.premiumGrid}>
               {PREMIUM.map((p) => (
                 <View key={p.t} style={styles.premiumItem}>
-                  <Text style={{ fontSize: 22 }}>{p.icon}</Text>
+                  <Text style={{ fontSize: 20 }}>{p.icon}</Text>
                   <Text style={styles.premiumItemText}>{p.t}</Text>
                 </View>
               ))}
-            </View>
-            <View style={styles.lockedCta}>
-              <Ionicons name="lock-closed" color={colors.textDim} size={16} />
-              <Text style={styles.lockedText}>In-app unlock coming soon</Text>
             </View>
           </Card>
         </ScrollView>
@@ -104,22 +114,32 @@ export default function Reading() {
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: space.lg, paddingVertical: space.md },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: space.md, paddingVertical: space.sm },
+  iconBtn: { height: 40, width: 40, alignItems: "center", justifyContent: "center" },
   headerTitle: { color: colors.text, fontSize: font.h3, fontWeight: "700" },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   h1: { color: colors.text, fontSize: font.h1, fontWeight: "800", marginTop: 8 },
   lineHead: { flexDirection: "row", alignItems: "center", gap: 8 },
   dot: { height: 12, width: 12, borderRadius: 6 },
   lineLabel: { color: colors.text, fontSize: font.h3, fontWeight: "700", flex: 1 },
-  summary: { color: colors.text, fontSize: font.body, marginTop: space.md },
+  summary: { color: colors.text, fontSize: font.body, marginTop: space.md, lineHeight: 22 },
   bullet: { flexDirection: "row", gap: 8, marginTop: 6 },
   bulletText: { color: colors.textDim, fontSize: font.small, flex: 1, lineHeight: 20 },
-  premium: { backgroundColor: "rgba(124,58,237,0.16)", borderColor: "rgba(167,139,250,0.35)", gap: space.sm },
-  premiumTitle: { color: colors.text, fontSize: font.h2, fontWeight: "800", marginTop: 4 },
+  astro: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.md,
+    backgroundColor: colors.cosmic600,
+    borderRadius: radius.md,
+    padding: space.lg,
+    ...shadow,
+  },
+  astroIcon: { height: 44, width: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
+  astroTitle: { color: "#fff", fontSize: font.h3, fontWeight: "800" },
+  astroSub: { color: "rgba(255,255,255,0.85)", fontSize: font.small, marginTop: 2 },
+  premiumTitle: { color: colors.text, fontSize: font.h2, fontWeight: "800", marginTop: 2 },
   premiumSub: { color: colors.textDim, fontSize: font.small, lineHeight: 20 },
   premiumGrid: { flexDirection: "row", flexWrap: "wrap", gap: space.sm, marginTop: space.sm },
-  premiumItem: { width: "30%", flexGrow: 1, alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.05)", borderRadius: radius.sm, paddingVertical: space.md },
+  premiumItem: { width: "30%", flexGrow: 1, alignItems: "center", gap: 4, backgroundColor: colors.chipBg, borderRadius: radius.sm, paddingVertical: space.md },
   premiumItemText: { color: colors.text, fontSize: font.tiny, fontWeight: "600", textAlign: "center" },
-  lockedCta: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: space.md },
-  lockedText: { color: colors.textDim, fontSize: font.small, fontWeight: "600" },
 });

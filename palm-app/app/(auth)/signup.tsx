@@ -61,7 +61,7 @@ export default function Signup() {
           />
           {error && <Text style={styles.error}>{error}</Text>}
           {notice && <Text style={styles.notice}>{notice}</Text>}
-          <Button title="Sign up" onPress={submit} loading={busy} />
+          <Button title="Sign up" onPress={submit} loading={busy} icon="person-add-outline" />
         </View>
 
         <Text style={styles.footer}>

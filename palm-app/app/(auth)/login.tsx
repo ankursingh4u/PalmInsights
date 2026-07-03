@@ -56,7 +56,7 @@ export default function Login() {
             onChangeText={setPassword}
           />
           {error && <Text style={styles.error}>{error}</Text>}
-          <Button title="Log in" onPress={submit} loading={busy} />
+          <Button title="Log in" onPress={submit} loading={busy} icon="log-in-outline" />
         </View>
 
         <Text style={styles.footer}>

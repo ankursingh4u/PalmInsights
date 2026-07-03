@@ -1,31 +1,37 @@
-// Shared design tokens — mirrors the PalmInsight web app (cosmic / mystical).
+// Design tokens — clean, light, minimal. One purple accent, lots of whitespace.
 
 export const colors = {
-  bg: "#07040f",
-  bgElevated: "#0b0714",
-  card: "rgba(255,255,255,0.05)",
-  cardBorder: "rgba(255,255,255,0.10)",
-  text: "#f3f0ff",
-  textDim: "rgba(255,255,255,0.62)",
-  textFaint: "rgba(255,255,255,0.40)",
+  bg: "#F7F6FB", // soft off-white
+  bgElevated: "#FFFFFF",
+  card: "#FFFFFF",
+  cardBorder: "#EAE8F2",
+  chipBg: "#F2F1F8", // subtle neutral fill (icon chips, ghost buttons)
+  cosmicSoft: "#F3EDFE", // light purple tint (accent surfaces)
+  cosmicSoftBorder: "#E6DBFC",
+  overlay: "rgba(247,246,251,0.90)",
 
-  cosmic: "#8b5cf6",
-  cosmic300: "#c4b5fd",
-  cosmic400: "#a78bfa",
-  cosmic600: "#7c3aed",
+  text: "#1B1726", // ink
+  textDim: "#6A6480",
+  textFaint: "#9A94AC",
 
-  // palm line colors
-  life: "#ef4444",
-  heart: "#3b82f6",
-  head: "#eab308",
-  fate: "#22c55e",
+  // one accent
+  cosmic: "#7C3AED",
+  cosmic300: "#7C3AED", // used as "active"/accent — kept strong for light bg
+  cosmic400: "#8B5CF6",
+  cosmic600: "#6D28D9",
 
-  danger: "#fca5a5",
-  success: "#86efac",
+  // palm line colors (tuned for contrast on light)
+  life: "#e11d48",
+  heart: "#2563eb",
+  head: "#d97706",
+  fate: "#16a34a",
+
+  danger: "#dc2626",
+  success: "#16a34a",
 };
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
-export const radius = { sm: 10, md: 16, lg: 22, full: 999 };
+export const radius = { sm: 12, md: 18, lg: 24, full: 999 };
 export const font = {
   h1: 30,
   h2: 22,
@@ -33,4 +39,13 @@ export const font = {
   body: 15,
   small: 13,
   tiny: 11,
+};
+
+// Soft, minimal elevation for cards on the light background.
+export const shadow = {
+  shadowColor: "#1B1726",
+  shadowOpacity: 0.05,
+  shadowRadius: 14,
+  shadowOffset: { width: 0, height: 5 },
+  elevation: 2,
 };
