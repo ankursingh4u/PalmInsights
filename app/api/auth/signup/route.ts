@@ -49,9 +49,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // When email delivery is configured, require email confirmation before the
-  // account is active. Otherwise (dev/no email), sign in immediately.
-  const requireVerify = emailEnabled;
+  // Email confirmation is OPT-IN (set REQUIRE_EMAIL_VERIFY=true to require it).
+  // Off by default so a flaky/undelivered email never blocks signup on web or
+  // app — users are signed in immediately (a confirmation email is still sent
+  // when configured, but it doesn't gate the account).
+  const requireVerify = emailEnabled && process.env.REQUIRE_EMAIL_VERIFY === "true";
   const verifyToken = requireVerify ? crypto.randomUUID().replace(/-/g, "") : null;
 
   const user: User = {

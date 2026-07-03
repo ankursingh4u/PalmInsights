@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Incorrect email or password." }, { status: 401 });
   }
 
-  // Block sign-in until the email is confirmed.
-  if (user.verified === false) {
+  // Only block on unconfirmed email when verification is explicitly required.
+  if (user.verified === false && process.env.REQUIRE_EMAIL_VERIFY === "true") {
     return NextResponse.json(
       { error: "Please confirm your email first — check your inbox for the confirmation link." },
       { status: 403 }
