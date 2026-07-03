@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "scheme": "palminsight",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "backgroundColor": "#07040f",
     "android": {
       "package": "live.bolddev.palminsight"
@@ -23,7 +23,9 @@
           "photosPermission": "PalmInsight needs your photos to read a palm you've already captured.",
           "cameraPermission": "PalmInsight uses the camera to scan your palm."
         }
-      ]
+      ],
+      "expo-asset",
+      "expo-font"
     ]
   }
 }
