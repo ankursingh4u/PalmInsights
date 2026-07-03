@@ -33,7 +33,7 @@ export default function Home() {
             <Text style={styles.heroSub}>Snap a photo — AI reads your real lines in seconds.</Text>
             <View style={styles.heroCta}>
               <Text style={styles.heroCtaText}>Start reading</Text>
-              <Ionicons name="arrow-forward" color="#fff" size={18} />
+              <Ionicons name="arrow-forward" color={colors.cosmic600} size={18} />
             </View>
           </Card>
         </Pressable>
@@ -66,20 +66,20 @@ const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: colors.bg },
   hi: { color: colors.textDim, fontSize: font.body },
   h1: { color: colors.text, fontSize: 28, fontWeight: "800", marginTop: 4, lineHeight: 34 },
-  hero: { alignItems: "flex-start", gap: 6, backgroundColor: colors.cosmicSoft, borderColor: colors.cosmicSoftBorder },
-  heroTitle: { color: colors.text, fontSize: font.h2, fontWeight: "800", marginTop: 4 },
-  heroSub: { color: colors.textDim, fontSize: font.body },
+  hero: { alignItems: "flex-start", gap: 6, backgroundColor: colors.cosmic600, borderColor: colors.cosmic600 },
+  heroTitle: { color: "#fff", fontSize: font.h2, fontWeight: "800", marginTop: 4 },
+  heroSub: { color: "rgba(255,255,255,0.85)", fontSize: font.body },
   heroCta: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: colors.cosmic600,
+    backgroundColor: "#fff",
     paddingHorizontal: space.lg,
-    paddingVertical: 10,
+    paddingVertical: 11,
     borderRadius: radius.full,
     marginTop: space.md,
   },
-  heroCtaText: { color: "#fff", fontWeight: "700", fontSize: font.body },
+  heroCtaText: { color: colors.cosmic600, fontWeight: "800", fontSize: font.body },
   section: { color: colors.textFaint, fontSize: font.small, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: space.md },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: space.md },
   perk: { width: "47%", flexGrow: 1, gap: 8 },
