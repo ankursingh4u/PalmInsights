@@ -20,12 +20,14 @@ export default function Scan() {
 
   async function pick(source: "camera" | "library") {
     try {
+      console.log("[scan] tap", source);
       const perm =
         source === "camera"
           ? await ImagePicker.requestCameraPermissionsAsync()
           : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log("[scan] permission", JSON.stringify(perm));
       if (!perm.granted) {
-        Alert.alert("Permission needed", "Please allow access to continue.");
+        Alert.alert("Permission needed", "Please allow camera access in Settings, then try again.");
         return;
       }
       const opts: ImagePicker.ImagePickerOptions = {
@@ -33,11 +35,20 @@ export default function Scan() {
         quality: 0.5,
         base64: true,
       };
+      console.log("[scan] launching picker…");
       const res =
         source === "camera"
           ? await ImagePicker.launchCameraAsync(opts)
           : await ImagePicker.launchImageLibraryAsync(opts);
-      if (res.canceled || !res.assets?.[0]?.base64) return;
+      console.log("[scan] result canceled=", res.canceled, "hasAsset=", !!res.assets?.[0]);
+      if (res.canceled) {
+        Alert.alert("No photo", "The camera was closed without taking a photo.");
+        return;
+      }
+      if (!res.assets?.[0]?.base64) {
+        Alert.alert("Couldn't read photo", "Please try again.");
+        return;
+      }
 
       const dataUrl = `data:image/jpeg;base64,${res.assets[0].base64}`;
       setBusy(true);
