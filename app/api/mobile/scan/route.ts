@@ -17,6 +17,7 @@ import { track } from "@/lib/analytics";
 import { enforceRateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
+export const maxDuration = 60; // AI vision + geometry can exceed the 10s default
 
 // The native app has no MediaPipe landmarks, so this endpoint reads the palm
 // from the IMAGE alone: the AI both gatekeeps (is it a real palm?) and reads the

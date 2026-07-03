@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/Icon";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import { api } from "@/lib/api";
 import { Card } from "@/components/ui";
 import { colors, font, radius, space } from "@/lib/theme";
@@ -32,8 +33,7 @@ export default function Scan() {
       }
       const opts: ImagePicker.ImagePickerOptions = {
         mediaTypes: ["images"],
-        quality: 0.5,
-        base64: true,
+        quality: 0.7,
       };
       console.log("[scan] launching picker…");
       const res =
@@ -41,17 +41,26 @@ export default function Scan() {
           ? await ImagePicker.launchCameraAsync(opts)
           : await ImagePicker.launchImageLibraryAsync(opts);
       console.log("[scan] result canceled=", res.canceled, "hasAsset=", !!res.assets?.[0]);
-      if (res.canceled) {
-        Alert.alert("No photo", "The camera was closed without taking a photo.");
-        return;
-      }
-      if (!res.assets?.[0]?.base64) {
-        Alert.alert("Couldn't read photo", "Please try again.");
+      if (res.canceled || !res.assets?.[0]?.uri) {
+        if (res.canceled) Alert.alert("No photo", "Closed without taking a photo.");
         return;
       }
 
-      const dataUrl = `data:image/jpeg;base64,${res.assets[0].base64}`;
       setBusy(true);
+      // Downscale before upload (full-res photos are too big / slow → the AI
+      // call times out). Mirrors the website's 1280px downscale.
+      const manipulated = await ImageManipulator.manipulateAsync(
+        res.assets[0].uri,
+        [{ resize: { width: 1024 } }],
+        { compress: 0.6, base64: true, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      if (!manipulated.base64) {
+        Alert.alert("Couldn't read photo", "Please try again.");
+        setBusy(false);
+        return;
+      }
+      const dataUrl = `data:image/jpeg;base64,${manipulated.base64}`;
+      console.log("[scan] payload chars=", dataUrl.length);
       const out = await api.scan(dataUrl);
       setBusy(false);
 
