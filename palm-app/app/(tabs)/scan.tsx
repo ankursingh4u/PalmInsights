@@ -29,9 +29,7 @@ export default function Scan() {
         return;
       }
       const opts: ImagePicker.ImagePickerOptions = {
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
+        mediaTypes: ["images"],
         quality: 0.5,
         base64: true,
       };
