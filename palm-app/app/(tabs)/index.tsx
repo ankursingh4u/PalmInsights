@@ -42,10 +42,17 @@ export default function Home() {
           <Text style={styles.section}>What you'll discover</Text>
           <View style={styles.grid}>
             {PERKS.map((p) => (
-              <Card key={p.label} style={styles.perk}>
-                <Text style={{ fontSize: 26 }}>{p.icon}</Text>
-                <Text style={styles.perkText}>{p.label}</Text>
-              </Card>
+              <Pressable
+                key={p.label}
+                style={styles.perk}
+                onPress={() => router.push("/(tabs)/scan")}
+              >
+                <Card style={{ gap: 8 }}>
+                  <Text style={{ fontSize: 26 }}>{p.icon}</Text>
+                  <Text style={styles.perkText}>{p.label}</Text>
+                  <Text style={styles.perkHint}>Scan to reveal ›</Text>
+                </Card>
+              </Pressable>
             ))}
           </View>
         </View>
@@ -82,8 +89,9 @@ const styles = StyleSheet.create({
   heroCtaText: { color: colors.cosmic600, fontWeight: "800", fontSize: font.body },
   section: { color: colors.textFaint, fontSize: font.small, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: space.md },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: space.md },
-  perk: { width: "47%", flexGrow: 1, gap: 8 },
+  perk: { width: "47%", flexGrow: 1 },
   perkText: { color: colors.text, fontSize: font.body, fontWeight: "600" },
+  perkHint: { color: colors.cosmic, fontSize: font.tiny, fontWeight: "600" },
   rowCard: { flexDirection: "row", alignItems: "center", gap: space.md },
   rowText: { color: colors.text, fontSize: font.body, fontWeight: "600", flex: 1 },
 });
