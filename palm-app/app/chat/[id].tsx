@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { api } from "@/lib/api";
 import type { ChatMessage } from "@/lib/types";
 import { colors, font, radius, space } from "@/lib/theme";
@@ -52,7 +52,7 @@ export default function Chat() {
     <SafeAreaView style={styles.wrap} edges={["top"]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={10} style={styles.iconBtn}>
-          <Ionicons name="chevron-back" color={colors.text} size={24} />
+          <Icon name="chevron-back" color={colors.text} size={24} />
         </Pressable>
         <View style={styles.headerCenter}>
           <View style={styles.avatar}>
@@ -112,7 +112,7 @@ export default function Chat() {
             disabled={busy || !input.trim()}
             style={[styles.sendBtn, (busy || !input.trim()) && { opacity: 0.4 }]}
           >
-            <Ionicons name="arrow-up" color="#fff" size={22} />
+            <Icon name="arrow-up" color="#fff" size={22} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>

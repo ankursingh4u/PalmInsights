@@ -1,7 +1,7 @@
 import { ScrollView, Text, View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui";
 import { colors, font, radius, space } from "@/lib/theme";
@@ -12,7 +12,7 @@ function Row({
   onPress,
   danger,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   label: string;
   onPress: () => void;
   danger?: boolean;
@@ -20,10 +20,10 @@ function Row({
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
       <View style={styles.rowIcon}>
-        <Ionicons name={icon} color={danger ? colors.danger : colors.cosmic300} size={20} />
+        <Icon name={icon} color={danger ? colors.danger : colors.cosmic300} size={20} />
       </View>
       <Text style={[styles.rowLabel, danger && { color: colors.danger }]}>{label}</Text>
-      {!danger && <Ionicons name="chevron-forward" color={colors.textFaint} size={18} />}
+      {!danger && <Icon name="chevron-forward" color={colors.textFaint} size={18} />}
     </Pressable>
   );
 }

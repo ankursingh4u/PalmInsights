@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ScrollView, Text, View, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { api } from "@/lib/api";
 import type { AnalysisResult } from "@/lib/types";
 import { Card, Chip } from "@/components/ui";
@@ -35,7 +35,7 @@ export default function Reading() {
     <SafeAreaView style={styles.wrap} edges={["top"]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={10} style={styles.iconBtn}>
-          <Ionicons name="chevron-back" color={colors.text} size={24} />
+          <Icon name="chevron-back" color={colors.text} size={24} />
         </Pressable>
         <Text style={styles.headerTitle}>Your Reading</Text>
         <View style={{ width: 40 }} />
@@ -69,7 +69,7 @@ export default function Reading() {
               {!!line.summary && <Text style={styles.summary}>{line.summary}</Text>}
               {line.interpretation.map((t, i) => (
                 <View key={i} style={styles.bullet}>
-                  <Ionicons name="ellipse" size={5} color={line.color} style={{ marginTop: 7 }} />
+                  <Icon name="ellipse" size={5} color={line.color} style={{ marginTop: 7 }} />
                   <Text style={styles.bulletText}>{t}</Text>
                 </View>
               ))}
@@ -86,7 +86,7 @@ export default function Reading() {
                 <Text style={styles.astroTitle}>Ask the Astrologer</Text>
                 <Text style={styles.astroSub}>Chat about your reading — love, money, luck…</Text>
               </View>
-              <Ionicons name="chatbubbles" color="#fff" size={22} />
+              <Icon name="chatbubbles" color="#fff" size={22} />
             </View>
           </Pressable>
 

@@ -1,7 +1,7 @@
 import { ScrollView, Text, View, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui";
 import { colors, font, radius, space } from "@/lib/theme";
@@ -33,7 +33,7 @@ export default function Home() {
             <Text style={styles.heroSub}>Snap a photo — AI reads your real lines in seconds.</Text>
             <View style={styles.heroCta}>
               <Text style={styles.heroCtaText}>Start reading</Text>
-              <Ionicons name="arrow-forward" color={colors.cosmic600} size={18} />
+              <Icon name="arrow-forward" color={colors.cosmic600} size={18} />
             </View>
           </Card>
         </Pressable>
@@ -52,9 +52,9 @@ export default function Home() {
 
         <Pressable onPress={() => router.push("/(tabs)/readings")}>
           <Card style={styles.rowCard}>
-            <Ionicons name="book" color={colors.cosmic300} size={22} />
+            <Icon name="book" color={colors.cosmic300} size={22} />
             <Text style={styles.rowText}>My past readings</Text>
-            <Ionicons name="chevron-forward" color={colors.textFaint} size={18} />
+            <Icon name="chevron-forward" color={colors.textFaint} size={18} />
           </Card>
         </Pressable>
       </ScrollView>

@@ -1,7 +1,11 @@
 import { Redirect, Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Text } from "react-native";
 import { useAuth } from "@/lib/auth";
 import { colors } from "@/lib/theme";
+
+function TabEmoji({ char, focused }: { char: string; focused: boolean }) {
+  return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.45 }}>{char}</Text>;
+}
 
 export default function TabsLayout() {
   const { user, loading } = useAuth();
@@ -27,28 +31,28 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color, size }) => <Ionicons name="sparkles" color={color} size={size} />,
+          tabBarIcon: ({ focused }) => <TabEmoji char="🏠" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="scan"
         options={{
           title: "Scan",
-          tabBarIcon: ({ color, size }) => <Ionicons name="scan" color={color} size={size} />,
+          tabBarIcon: ({ focused }) => <TabEmoji char="📷" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="readings"
         options={{
           title: "Readings",
-          tabBarIcon: ({ color, size }) => <Ionicons name="book" color={color} size={size} />,
+          tabBarIcon: ({ focused }) => <TabEmoji char="📖" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" color={color} size={size} />,
+          tabBarIcon: ({ focused }) => <TabEmoji char="👤" focused={focused} />,
         }}
       />
     </Tabs>

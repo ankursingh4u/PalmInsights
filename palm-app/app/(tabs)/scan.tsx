@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ScrollView, Text, View, StyleSheet, Pressable, ActivityIndicator, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as ImagePicker from "expo-image-picker";
 import { api } from "@/lib/api";
 import { Card } from "@/components/ui";
@@ -68,16 +68,16 @@ export default function Scan() {
         </View>
 
         <View style={styles.frame}>
-          <Ionicons name="hand-left-outline" color={colors.cosmic300} size={72} />
+          <Icon name="hand-left-outline" color={colors.cosmic300} size={72} />
         </View>
 
         <View style={{ gap: space.md }}>
           <Pressable onPress={() => pick("camera")} disabled={busy} style={({ pressed }) => [styles.primary, pressed && { opacity: 0.9 }]}>
-            <Ionicons name="camera" color="#fff" size={20} />
+            <Icon name="camera" color="#fff" size={20} />
             <Text style={styles.primaryText}>Take a photo</Text>
           </Pressable>
           <Pressable onPress={() => pick("library")} disabled={busy} style={({ pressed }) => [styles.ghost, pressed && { opacity: 0.9 }]}>
-            <Ionicons name="image" color={colors.text} size={20} />
+            <Icon name="image" color={colors.text} size={20} />
             <Text style={styles.ghostText}>Choose from gallery</Text>
           </Pressable>
         </View>
@@ -86,7 +86,7 @@ export default function Scan() {
           <Text style={styles.tipTitle}>For the best reading</Text>
           {TIPS.map((t) => (
             <View key={t} style={styles.tipRow}>
-              <Ionicons name="checkmark-circle" color={colors.cosmic400} size={16} />
+              <Icon name="checkmark-circle" color={colors.cosmic400} size={16} />
               <Text style={styles.tipText}>{t}</Text>
             </View>
           ))}

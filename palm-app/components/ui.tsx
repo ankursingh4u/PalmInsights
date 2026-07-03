@@ -9,7 +9,7 @@ import {
   View,
   ViewProps,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { colors, font, radius, shadow, space } from "@/lib/theme";
 
 export function Card({ style, children, ...rest }: ViewProps) {
@@ -33,7 +33,7 @@ export function Button({
   loading?: boolean;
   disabled?: boolean;
   variant?: "primary" | "ghost";
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: string;
 }) {
   const isPrimary = variant === "primary";
   const fg = isPrimary ? "#fff" : colors.text;
@@ -52,7 +52,7 @@ export function Button({
         <ActivityIndicator color={fg} />
       ) : (
         <>
-          {icon && <Ionicons name={icon} size={18} color={fg} />}
+          {icon && <Icon name={icon} size={18} color={fg} />}
           <Text style={[styles.btnText, { color: fg }]}>{title}</Text>
         </>
       )}

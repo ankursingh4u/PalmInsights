@@ -3,7 +3,7 @@ import { FlatList, Text, View, StyleSheet, Pressable, RefreshControl, ActivityIn
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { api } from "@/lib/api";
 import type { ScanSummary } from "@/lib/types";
 import { Card, Chip } from "@/components/ui";
@@ -63,7 +63,7 @@ export default function Readings() {
               <Text style={{ fontSize: 44 }}>🔮</Text>
               <Text style={styles.emptyText}>No readings yet.</Text>
               <Pressable onPress={() => router.push("/(tabs)/scan")} style={styles.cta}>
-                <Ionicons name="scan" color="#fff" size={18} />
+                <Icon name="scan" color="#fff" size={18} />
                 <Text style={styles.ctaText}>Scan your palm</Text>
               </Pressable>
             </View>
@@ -84,7 +84,7 @@ export default function Readings() {
                   </Text>
                 </View>
                 <Chip label={item.paid ? "✦ Premium" : "Free"} color={item.paid ? colors.cosmic300 : undefined} />
-                <Ionicons name="chevron-forward" color={colors.textFaint} size={18} />
+                <Icon name="chevron-forward" color={colors.textFaint} size={18} />
               </Card>
             </Pressable>
           )}
