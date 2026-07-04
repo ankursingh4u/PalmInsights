@@ -3,13 +3,15 @@ import { z } from "zod";
 import { store } from "@/lib/store";
 import { gateResult, applyVisionReading } from "@/lib/palmistry";
 import { analyzePalmImage } from "@/lib/ai/palmVision";
+import { getOwnerKey } from "@/lib/auth";
+import { verifyProToken } from "@/lib/token";
 import { track } from "@/lib/analytics";
 import { enforceRateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // full report = most-capable model, can be slow
 
-const BodySchema = z.object({ scanId: z.string().min(1) });
+const BodySchema = z.object({ scanId: z.string().min(1), proToken: z.string().optional() });
 
 // The app's Deep Report. Upgrades the reading with the most capable model
 // (all four lines + the 6-chapter premium report) and returns it. No unlock
@@ -23,6 +25,12 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "scanId required" }, { status: 400 });
   }
+  // Pro-gated: unlock with a valid Pro token (from the launch coupon, or from
+  // billing once live). Free users get the paywall instead.
+  if (!verifyProToken(parsed.data.proToken, getOwnerKey())) {
+    return NextResponse.json({ requiresPro: true }, { status: 402 });
+  }
+
   const record = await store.getScan(parsed.data.scanId);
   if (!record) {
     return NextResponse.json({ error: "Reading not found" }, { status: 404 });

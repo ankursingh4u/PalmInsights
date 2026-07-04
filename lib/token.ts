@@ -21,6 +21,31 @@ export function issueUnlockToken(scanId: string): string {
   return `${Buffer.from(payload).toString("base64url")}.${sig}`;
 }
 
+/** Create a Pro-entitlement token bound to an owner (user id). Permanent. */
+export function issueProToken(ownerKey: string): string {
+  const payload = `pro:${ownerKey}.${Date.now()}`;
+  return `${Buffer.from(payload).toString("base64url")}.${sign(payload)}`;
+}
+
+/** Verify a Pro token belongs to the given owner. */
+export function verifyProToken(token: string | undefined, ownerKey: string): boolean {
+  if (!token) return false;
+  const parts = token.split(".");
+  if (parts.length !== 2) return false;
+  const [b64, sig] = parts;
+  let payload: string;
+  try {
+    payload = Buffer.from(b64, "base64url").toString("utf8");
+  } catch {
+    return false;
+  }
+  const expected = sign(payload);
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return false;
+  return payload.startsWith(`pro:${ownerKey}.`);
+}
+
 /** Verify a token belongs to the given scan id. */
 export function verifyUnlockToken(token: string, scanId: string): boolean {
   if (!token) return false;

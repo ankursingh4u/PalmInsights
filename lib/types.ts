@@ -141,6 +141,7 @@ export type AnalyticsEventName =
   | "premium_unlocked"
   | "compatibility_run"
   | "astrologer_question"
+  | "coupon_redeemed"
   | "share_created";
 
 export interface AnalyticsEvent {

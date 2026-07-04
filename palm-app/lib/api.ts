@@ -26,6 +26,24 @@ export async function setToken(token: string | null): Promise<void> {
   else await AsyncStorage.removeItem(TOKEN_KEY);
 }
 
+// --- Pro entitlement (from the launch coupon, or billing later) ---
+const PRO_KEY = "palm:pro";
+let cachedPro: string | null = null;
+
+export async function getProToken(): Promise<string | null> {
+  if (cachedPro !== null) return cachedPro || null;
+  cachedPro = (await AsyncStorage.getItem(PRO_KEY)) ?? "";
+  return cachedPro || null;
+}
+export async function setProToken(token: string | null): Promise<void> {
+  cachedPro = token ?? "";
+  if (token) await AsyncStorage.setItem(PRO_KEY, token);
+  else await AsyncStorage.removeItem(PRO_KEY);
+}
+export async function isPro(): Promise<boolean> {
+  return Boolean(await getProToken());
+}
+
 async function request<T>(
   path: string,
   opts: { method?: "GET" | "POST"; body?: unknown } = {}
@@ -69,8 +87,12 @@ export const api = {
     }>("/api/mobile/scan", { body: { image, handedness } }),
   history: () => request<{ scans: ScanSummary[]; signedIn: boolean }>("/api/history"),
   getScan: (id: string) => request<{ result: AnalysisResult }>(`/api/scan/${id}`),
-  report: (scanId: string) =>
-    request<{ result: AnalysisResult }>("/api/mobile/report", { body: { scanId } }),
+  report: (scanId: string, proToken: string | null) =>
+    request<{ result?: AnalysisResult; requiresPro?: boolean }>("/api/mobile/report", {
+      body: { scanId, proToken: proToken ?? undefined },
+    }),
+  redeem: (code: string) =>
+    request<{ pro: boolean; proToken: string }>("/api/mobile/redeem", { body: { code } }),
   chat: (scanId: string, messages: ChatMessage[]) =>
     request<{ reply: string }>("/api/mobile/chat", { body: { scanId, messages } }),
 };
