@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { api, setToken } from "./api";
+import { getGoogleIdToken } from "./google";
 import type { UserPublic } from "./types";
 
 interface AuthState {
@@ -11,6 +12,7 @@ interface AuthState {
     email: string,
     password: string
   ) => Promise<{ needsVerify?: boolean }>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -57,6 +59,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { needsVerify: r.needsVerify };
   }, []);
 
+  const signInWithGoogle = useCallback(async () => {
+    const idToken = await getGoogleIdToken();
+    const r = await api.google(idToken);
+    await setToken(r.token);
+    setUser(r.user);
+    setIsAdmin(Boolean(r.isAdmin));
+  }, []);
+
   const signOut = useCallback(async () => {
     await setToken(null);
     setUser(null);
@@ -64,7 +74,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, signIn, signUp, signOut, refresh }}>
+    <AuthContext.Provider
+      value={{ user, isAdmin, loading, signIn, signUp, signInWithGoogle, signOut, refresh }}
+    >
       {children}
     </AuthContext.Provider>
   );

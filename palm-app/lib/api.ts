@@ -76,6 +76,10 @@ export const api = {
       { body: { email, password } }
     ),
   me: () => request<{ user: UserPublic | null; isAdmin?: boolean }>("/api/auth/me"),
+  google: (idToken: string) =>
+    request<{ user: UserPublic; isAdmin?: boolean; token: string }>("/api/auth/google", {
+      body: { idToken },
+    }),
 
   // --- palm ---
   scan: (image: string, handedness: "Left" | "Right" | "Unknown" = "Unknown") =>
