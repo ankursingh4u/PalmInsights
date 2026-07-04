@@ -5,11 +5,21 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "palminsight",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "newArchEnabled": false,
-    "backgroundColor": "#07040f",
+    "backgroundColor": "#F7F6FB",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#6d28d9"
+    },
     "android": {
-      "package": "live.bolddev.palminsight"
+      "package": "live.bolddev.palminsight",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-foreground.png",
+        "backgroundColor": "#6d28d9"
+      }
     },
     "ios": {
       "supportsTablet": false,
