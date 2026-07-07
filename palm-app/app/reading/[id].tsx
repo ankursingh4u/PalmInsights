@@ -15,6 +15,7 @@ import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
 import { Icon } from "@/components/Icon";
 import { ShareCard } from "@/components/ShareCard";
+import { subscribePro } from "@/lib/billing";
 import { api, getProToken, setProToken } from "@/lib/api";
 import type { AnalysisResult, PremiumReport } from "@/lib/types";
 import { Card, Chip } from "@/components/ui";
@@ -52,6 +53,25 @@ export default function Reading() {
   const [code, setCode] = useState("");
   const [redeemBusy, setRedeemBusy] = useState(false);
   const [redeemErr, setRedeemErr] = useState<string | null>(null);
+  const [subBusy, setSubBusy] = useState(false);
+  const [subErr, setSubErr] = useState<string | null>(null);
+
+  async function goPro() {
+    if (subBusy) return;
+    setSubBusy(true);
+    setSubErr(null);
+    try {
+      await subscribePro();
+      setPro(true);
+      setShowRedeem(false);
+      revealReport();
+    } catch (e) {
+      const m = (e as Error).message;
+      if (!/cancel/i.test(m)) setSubErr(m);
+    } finally {
+      setSubBusy(false);
+    }
+  }
 
   useEffect(() => {
     getProToken().then((t) => setPro(Boolean(t)));
@@ -244,21 +264,30 @@ export default function Reading() {
                     {redeemBusy ? <ActivityIndicator color="#fff" /> : <Text style={styles.revealText}>Redeem &amp; Unlock</Text>}
                   </Pressable>
                 </View>
-              ) : (
+              ) : pro ? (
                 <>
                   {reportErr && <Text style={styles.err}>{reportErr}</Text>}
                   <Pressable onPress={revealReport} disabled={reportBusy} style={[styles.revealBtn, reportBusy && { opacity: 0.6 }]}>
                     {reportBusy ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
-                      <Text style={styles.revealText}>{pro ? "Reveal Deep Report" : "Unlock Deep Report"}</Text>
+                      <Text style={styles.revealText}>Reveal Deep Report</Text>
                     )}
                   </Pressable>
-                  {!pro && (
-                    <Pressable onPress={() => setShowRedeem(true)}>
-                      <Text style={styles.redeemLink}>Have a launch code?</Text>
-                    </Pressable>
-                  )}
+                </>
+              ) : (
+                <>
+                  {subErr && <Text style={styles.err}>{subErr}</Text>}
+                  <Pressable onPress={goPro} disabled={subBusy} style={[styles.revealBtn, subBusy && { opacity: 0.6 }]}>
+                    {subBusy ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.revealText}>Subscribe — $9/month</Text>
+                    )}
+                  </Pressable>
+                  <Pressable onPress={() => setShowRedeem(true)}>
+                    <Text style={styles.redeemLink}>Have a launch code?</Text>
+                  </Pressable>
                 </>
               )}
             </Card>

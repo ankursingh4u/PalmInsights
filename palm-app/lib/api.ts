@@ -100,6 +100,10 @@ export const api = {
     }),
   redeem: (code: string) =>
     request<{ pro: boolean; proToken: string }>("/api/mobile/redeem", { body: { code } }),
+  subscribe: (productId: string, purchaseToken: string) =>
+    request<{ active: boolean; proToken: string; expiresAt: number }>("/api/mobile/subscribe", {
+      body: { productId, purchaseToken },
+    }),
   chat: async (scanId: string, messages: ChatMessage[]) =>
     request<{ reply: string }>("/api/mobile/chat", {
       body: { scanId, messages, proToken: (await getProToken()) ?? undefined },

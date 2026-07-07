@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/Icon";
 import { useAuth } from "@/lib/auth";
 import { api, getProToken, setProToken } from "@/lib/api";
+import { subscribePro } from "@/lib/billing";
 import { Card } from "@/components/ui";
 import { colors, font, radius, space } from "@/lib/theme";
 
@@ -38,10 +39,27 @@ export default function Profile() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [subBusy, setSubBusy] = useState(false);
 
   useEffect(() => {
     getProToken().then((t) => setPro(Boolean(t)));
   }, []);
+
+  async function goPro() {
+    if (subBusy) return;
+    setSubBusy(true);
+    setErr(null);
+    try {
+      await subscribePro();
+      setPro(true);
+      setShowRedeem(false);
+    } catch (e) {
+      const m = (e as Error).message;
+      if (!/cancel/i.test(m)) setErr(m);
+    } finally {
+      setSubBusy(false);
+    }
+  }
 
   async function redeem() {
     const c = code.trim();
@@ -105,9 +123,19 @@ export default function Profile() {
                 </Pressable>
               </View>
             ) : (
-              <Pressable onPress={() => setShowRedeem(true)} style={styles.proBtn}>
-                <Text style={styles.proBtnText}>Enter launch code</Text>
-              </Pressable>
+              <>
+                {err && <Text style={styles.err}>{err}</Text>}
+                <Pressable onPress={goPro} disabled={subBusy} style={[styles.proBtn, subBusy && { opacity: 0.6 }]}>
+                  {subBusy ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.proBtnText}>Subscribe — $9/month</Text>
+                  )}
+                </Pressable>
+                <Pressable onPress={() => setShowRedeem(true)}>
+                  <Text style={styles.redeemLink}>Have a launch code?</Text>
+                </Pressable>
+              </>
             )}
           </Card>
         )}
@@ -159,4 +187,5 @@ const styles = StyleSheet.create({
   proBtn: { height: 48, borderRadius: radius.full, backgroundColor: colors.cosmic600, alignItems: "center", justifyContent: "center", marginTop: space.sm },
   proBtnText: { color: "#fff", fontSize: font.body, fontWeight: "700" },
   err: { color: colors.danger, fontSize: font.small },
+  redeemLink: { color: colors.cosmic600, fontSize: font.small, fontWeight: "600", textAlign: "center", marginTop: space.md },
 });
