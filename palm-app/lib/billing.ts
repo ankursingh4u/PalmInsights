@@ -1,8 +1,8 @@
 import {
   initConnection,
   endConnection,
-  fetchProducts,
-  requestPurchase,
+  getSubscriptions,
+  requestSubscription,
   finishTransaction,
   purchaseUpdatedListener,
   purchaseErrorListener,
@@ -15,8 +15,8 @@ import { api, setProToken } from "./api";
 export const SUB_SKU = "pro_monthly";
 
 /**
- * Run the native Google Play subscription purchase (react-native-iap v15),
- * verify it on the server, store the returned Pro token, and acknowledge it.
+ * Run the native Google Play subscription purchase, verify it on the server,
+ * store the returned Pro token, and acknowledge the purchase.
  * Resolves with the Pro token on success; throws a friendly error otherwise.
  */
 export async function subscribePro(): Promise<string> {
@@ -24,42 +24,32 @@ export async function subscribePro(): Promise<string> {
   let updSub: any = null;
   let errSub: any = null;
   try {
-    const products = (await (fetchProducts as any)({ skus: [SUB_SKU], type: "subs" })) as any[];
-    if (!products || products.length === 0) {
+    const subs = (await getSubscriptions({ skus: [SUB_SKU] })) as any[];
+    if (!subs || subs.length === 0) {
       throw new Error("Pro isn't available in the store yet — please try again soon.");
     }
-    const product: any = products[0];
-    const offerToken =
-      product?.subscriptionOfferDetailsAndroid?.[0]?.offerToken ??
-      product?.subscriptionOfferDetails?.[0]?.offerToken;
+    const sub: any = subs[0];
+    const offerToken = sub?.subscriptionOfferDetails?.[0]?.offerToken;
 
     const purchase = await new Promise<any>((resolve, reject) => {
       updSub = purchaseUpdatedListener((p: any) => {
-        const ids: string[] = p?.ids ?? (p?.productId ? [p.productId] : []);
-        if (ids.includes(SUB_SKU)) resolve(p);
+        if (p?.productId === SUB_SKU) resolve(p);
       });
       errSub = purchaseErrorListener((e: any) =>
         reject(new Error(e?.message || "Purchase was cancelled."))
       );
-      (requestPurchase as any)({
-        request: {
-          google: {
-            skus: [SUB_SKU],
-            ...(offerToken ? { subscriptionOffers: [{ sku: SUB_SKU, offerToken }] } : {}),
-          },
-          apple: { sku: SUB_SKU },
-        },
-        type: "subs",
-      }).catch((e: any) => reject(e instanceof Error ? e : new Error(String(e))));
+      requestSubscription({
+        sku: SUB_SKU,
+        ...(offerToken ? { subscriptionOffers: [{ sku: SUB_SKU, offerToken }] } : {}),
+      } as any).catch((e: any) => reject(e instanceof Error ? e : new Error(String(e))));
     });
 
-    const purchaseToken: string | undefined =
-      purchase?.purchaseToken ?? purchase?.purchaseTokenAndroid;
+    const purchaseToken: string | undefined = purchase?.purchaseToken;
     if (!purchaseToken) throw new Error("Couldn't read the purchase. Please try again.");
 
     const { proToken } = await api.subscribe(SUB_SKU, purchaseToken);
     await setProToken(proToken);
-    await (finishTransaction as any)({ purchase, isConsumable: false }).catch(() => {});
+    await finishTransaction({ purchase, isConsumable: false }).catch(() => {});
     return proToken;
   } finally {
     updSub?.remove?.();
