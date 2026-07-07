@@ -5,13 +5,12 @@ import { gateResult, applyVisionReading } from "@/lib/palmistry";
 import { analyzePalmImage } from "@/lib/ai/palmVision";
 import { getOwnerKey } from "@/lib/auth";
 import { verifyProToken } from "@/lib/token";
+import { overQuota, QUOTAS } from "@/lib/quota";
 import { track } from "@/lib/analytics";
-import { enforceRateLimit, enforceOwnerDaily } from "@/lib/ratelimit";
+import { enforceRateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // full report = most-capable model, can be slow
-
-const REPORT_DAILY_LIMIT = Number(process.env.PRO_REPORT_DAILY || 5);
 
 const BodySchema = z.object({ scanId: z.string().min(1), proToken: z.string().optional() });
 
@@ -33,9 +32,6 @@ export async function POST(req: NextRequest) {
   if (!verifyProToken(parsed.data.proToken, ownerKey)) {
     return NextResponse.json({ requiresPro: true }, { status: 402 });
   }
-  const capped = enforceOwnerDaily(ownerKey, "report", REPORT_DAILY_LIMIT);
-  if (capped) return capped;
-
   const record = await store.getScan(parsed.data.scanId);
   if (!record) {
     return NextResponse.json({ error: "Reading not found" }, { status: 404 });
@@ -45,6 +41,13 @@ export async function POST(req: NextRequest) {
   const head = record.result.lines.find((l) => l.key === "head");
   const alreadyEnhanced = head?.patternKey === "head-ai" && record.result.report;
   if (record.image && !alreadyEnhanced) {
+    // Only a NEW report counts against the monthly allowance (cached re-opens are free).
+    if (await overQuota(ownerKey, "premium_unlocked")) {
+      return NextResponse.json(
+        { error: `You've used all ${QUOTAS.premium_unlocked} Deep Reports in your plan this month. Resets on renewal 🙏` },
+        { status: 429 }
+      );
+    }
     const vision = await analyzePalmImage(record.image, {
       tier: "paid",
       lines: ["life", "heart", "head", "fate"],
@@ -52,8 +55,9 @@ export async function POST(req: NextRequest) {
     });
     if (vision?.lines?.length) {
       record.result = applyVisionReading(record.result, vision);
-      record.paid = true; // unlocked in-app (free for now)
+      record.paid = true;
       await store.saveScan(record);
+      await track("premium_unlocked", { ownerKey, scanId: record.id });
     }
   }
 
@@ -64,6 +68,5 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  await track("premium_unlocked", { ownerKey: record.ownerKey, scanId: record.id });
   return NextResponse.json({ result: gateResult(record.result, true) });
 }

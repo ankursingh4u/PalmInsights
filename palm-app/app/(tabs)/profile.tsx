@@ -88,7 +88,7 @@ export default function Profile() {
               <Text style={styles.proBadge}>✦ Go PRO</Text>
               <Text style={styles.proPrice}>$9 / month</Text>
             </View>
-            <Text style={styles.proSub}>Unlimited palm readings, Ask the Astrologer chat &amp; the full Deep Report.</Text>
+            <Text style={styles.proSub}>20 readings, 60 astrologer chats &amp; 10 Deep Reports a month.</Text>
             {showRedeem ? (
               <View style={{ gap: space.sm, marginTop: space.sm }}>
                 <TextInput

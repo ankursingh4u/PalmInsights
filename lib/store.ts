@@ -54,6 +54,7 @@ interface Store {
   // analytics
   recordEvent(event: AnalyticsEvent): Promise<void>;
   getEvents(): Promise<AnalyticsEvent[]>;
+  countOwnerEventsSince(ownerKey: string, name: string, sinceIso: string): Promise<number>;
   getPayments(): Promise<Payment[]>;
   recentScans(limit: number): Promise<ScanSummary[]>;
 
@@ -144,6 +145,11 @@ class MemoryStore implements Store {
   }
   async getEvents() {
     return this.events;
+  }
+  async countOwnerEventsSince(ownerKey: string, name: string, sinceIso: string) {
+    return this.events.filter(
+      (e) => e.ownerKey === ownerKey && e.name === name && e.createdAt >= sinceIso
+    ).length;
   }
   async getPayments() {
     return this.payments;
@@ -293,6 +299,15 @@ class SupabaseStore implements Store {
       scanId: d.scan_id ?? undefined,
       createdAt: d.created_at,
     })) as AnalyticsEvent[];
+  }
+  async countOwnerEventsSince(ownerKey: string, name: string, sinceIso: string) {
+    const { count } = await this.c
+      .from("palm_events")
+      .select("*", { count: "exact", head: true })
+      .eq("owner_key", ownerKey)
+      .eq("name", name)
+      .gte("created_at", sinceIso);
+    return count ?? 0;
   }
   async getPayments() {
     const { data } = await this.c.from("palm_payments").select("*");

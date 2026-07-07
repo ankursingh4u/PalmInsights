@@ -30,9 +30,9 @@ const CHAPTERS: { key: keyof PremiumReport; icon: string }[] = [
 ];
 
 const PRO_PERKS = [
-  "Unlimited palm readings",
-  "Ask the Astrologer — chat anytime",
-  "Full Deep Report (6 chapters)",
+  "20 palm readings a month",
+  "Ask the Astrologer — 60 chats / mo",
+  "10 full Deep Reports a month",
   "Your lucky number, color & day",
 ];
 

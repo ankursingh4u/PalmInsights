@@ -4,12 +4,11 @@ import { store } from "@/lib/store";
 import { askAstrologer } from "@/lib/ai/astrologer";
 import { getOwnerKey } from "@/lib/auth";
 import { verifyProToken } from "@/lib/token";
+import { overQuota, QUOTAS } from "@/lib/quota";
 import { track } from "@/lib/analytics";
-import { enforceRateLimit, enforceOwnerDaily } from "@/lib/ratelimit";
+import { enforceRateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
-
-const CHAT_DAILY_LIMIT = Number(process.env.PRO_CHAT_DAILY || 20);
 
 const BodySchema = z.object({
   scanId: z.string().min(1),
@@ -50,8 +49,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ requiresPro: true }, { status: 402 });
   }
 
-  const capped = enforceOwnerDaily(ownerKey, "chat", CHAT_DAILY_LIMIT);
-  if (capped) return capped;
+  // Monthly allowance (resets on renewal).
+  if (await overQuota(ownerKey, "astrologer_question")) {
+    return NextResponse.json(
+      { error: `You've used all ${QUOTAS.astrologer_question} chats in your plan this month. It resets on your renewal 🙏` },
+      { status: 429 }
+    );
+  }
 
   const record = await store.getScan(scanId);
   if (!record) {

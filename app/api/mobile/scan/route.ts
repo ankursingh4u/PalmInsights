@@ -14,6 +14,7 @@ import { aiEnabled } from "@/lib/config";
 import { store } from "@/lib/store";
 import { getOwnerKey, getSessionUserId } from "@/lib/auth";
 import { verifyProToken } from "@/lib/token";
+import { overQuota, QUOTAS } from "@/lib/quota";
 import { track } from "@/lib/analytics";
 import { enforceRateLimit } from "@/lib/ratelimit";
 
@@ -84,15 +85,20 @@ export async function POST(req: NextRequest) {
   const userId = getSessionUserId();
   const ownerKey = getOwnerKey();
 
-  // Free users get FREE_READINGS total; Pro (coupon or subscription) is unlimited.
+  // Free users get FREE_READINGS total; Pro gets a monthly allowance.
   if (!verifyProToken(proToken, ownerKey)) {
     const used = await store.countScansByOwner(ownerKey);
     if (used >= FREE_READINGS) {
       return NextResponse.json({
         requiresPro: true,
-        message: "You've used your free reading. Go Pro for unlimited readings + astrologer chat.",
+        message: "You've used your free reading. Go Pro for more readings + astrologer chat.",
       });
     }
+  } else if (await overQuota(ownerKey, "scan_created")) {
+    return NextResponse.json(
+      { error: `You've used all ${QUOTAS.scan_created} readings in your plan this month. Resets on renewal 🙏` },
+      { status: 429 }
+    );
   }
   const name = userId ? personName || undefined : undefined;
 
