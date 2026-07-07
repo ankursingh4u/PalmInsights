@@ -64,6 +64,17 @@ export default function Scan() {
       const out = await api.scan(dataUrl);
       setBusy(false);
 
+      if (out.requiresPro) {
+        Alert.alert(
+          "Unlock unlimited readings",
+          out.message || "You've used your free reading. Go Pro for unlimited readings + astrologer chat.",
+          [
+            { text: "Not now", style: "cancel" },
+            { text: "Go Pro", onPress: () => router.push("/(tabs)/profile") },
+          ]
+        );
+        return;
+      }
       if (out.notPalm) {
         Alert.alert("Hmm, that's not a clear palm", out.message || "Try again with an open palm.");
         return;

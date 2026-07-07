@@ -86,9 +86,9 @@ export default function Profile() {
           <Card style={styles.proCard}>
             <View style={styles.proRow}>
               <Text style={styles.proBadge}>✦ Go PRO</Text>
-              <Text style={styles.proPrice}>$14 · lifetime</Text>
+              <Text style={styles.proPrice}>$9 / month</Text>
             </View>
-            <Text style={styles.proSub}>Unlock Deep Reports, unlimited astrologer chat, compatibility &amp; daily guidance.</Text>
+            <Text style={styles.proSub}>Unlimited palm readings, Ask the Astrologer chat &amp; the full Deep Report.</Text>
             {showRedeem ? (
               <View style={{ gap: space.sm, marginTop: space.sm }}>
                 <TextInput

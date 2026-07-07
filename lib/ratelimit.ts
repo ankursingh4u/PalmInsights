@@ -71,6 +71,32 @@ export function enforceRateLimit(
   );
 }
 
+/**
+ * Per-owner daily cap (cost guard for Pro AI usage). Keyed by owner id, not IP.
+ * In-memory; a serverless cold start resets the window, so it's a soft guard
+ * against abuse rather than a hard accounting limit — good enough to protect
+ * the API budget. Returns a 429 response when exceeded, else null.
+ */
+export function enforceOwnerDaily(
+  ownerKey: string,
+  bucket: string,
+  limit: number
+): NextResponse | null {
+  const key = `daily:${bucket}:${ownerKey}`;
+  const now = Date.now();
+  const hit = buckets.get(key);
+  if (!hit || hit.resetAt < now) {
+    buckets.set(key, { count: 1, resetAt: now + 24 * 60 * 60 * 1000 });
+    return null;
+  }
+  hit.count += 1;
+  if (hit.count <= limit) return null;
+  return NextResponse.json(
+    { error: "You've reached today's limit. It resets in a few hours 🙏" },
+    { status: 429 }
+  );
+}
+
 // Occasionally evict expired buckets to bound memory.
 export function sweep(): void {
   const now = Date.now();

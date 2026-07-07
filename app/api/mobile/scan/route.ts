@@ -13,11 +13,15 @@ import { analyzePalmImage, detectLineGeometry } from "@/lib/ai/palmVision";
 import { aiEnabled } from "@/lib/config";
 import { store } from "@/lib/store";
 import { getOwnerKey, getSessionUserId } from "@/lib/auth";
+import { verifyProToken } from "@/lib/token";
 import { track } from "@/lib/analytics";
 import { enforceRateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // AI vision + geometry can exceed the 10s default
+
+// Free users get this many readings total; Pro is unlimited.
+const FREE_READINGS = Number(process.env.FREE_READINGS || 1);
 
 // The native app has no MediaPipe landmarks, so this endpoint reads the palm
 // from the IMAGE alone: the AI both gatekeeps (is it a real palm?) and reads the
@@ -28,6 +32,7 @@ const BodySchema = z.object({
   image: z.string().startsWith("data:image/").max(8_000_000),
   handedness: z.enum(["Left", "Right", "Unknown"]).default("Unknown"),
   personName: z.string().trim().max(40).optional(),
+  proToken: z.string().optional(),
 });
 
 /** Build a reading skeleton (4 lines, no geometry) the AI content fills in. */
@@ -65,7 +70,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "A palm photo is required." }, { status: 400 });
   }
-  const { image, handedness, personName } = parsed.data;
+  const { image, handedness, personName, proToken } = parsed.data;
 
   if (!aiEnabled) {
     return NextResponse.json(
@@ -78,6 +83,17 @@ export async function POST(req: NextRequest) {
   const createdAt = new Date().toISOString();
   const userId = getSessionUserId();
   const ownerKey = getOwnerKey();
+
+  // Free users get FREE_READINGS total; Pro (coupon or subscription) is unlimited.
+  if (!verifyProToken(proToken, ownerKey)) {
+    const used = await store.countScansByOwner(ownerKey);
+    if (used >= FREE_READINGS) {
+      return NextResponse.json({
+        requiresPro: true,
+        message: "You've used your free reading. Go Pro for unlimited readings + astrologer chat.",
+      });
+    }
+  }
   const name = userId ? personName || undefined : undefined;
 
   // Read the free lines + trace their geometry in parallel.

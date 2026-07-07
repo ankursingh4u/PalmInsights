@@ -26,10 +26,10 @@ const CHAPTERS: { key: keyof PremiumReport; icon: string }[] = [
 ];
 
 const PRO_PERKS = [
-  "All 6 Deep Report chapters",
-  "Unlimited astrologer chat",
-  "You + Crush compatibility",
-  "Daily lucky guidance",
+  "Unlimited palm readings",
+  "Ask the Astrologer — chat anytime",
+  "Full Deep Report (6 chapters)",
+  "Your lucky number, color & day",
 ];
 
 export default function Reading() {
@@ -143,15 +143,20 @@ export default function Reading() {
             </Card>
           ))}
 
-          {/* Ask the astrologer */}
-          <Pressable onPress={() => router.push(`/chat/${id}`)} style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
+          {/* Ask the astrologer — Pro only */}
+          <Pressable
+            onPress={() => (pro ? router.push(`/chat/${id}`) : setShowRedeem(true))}
+            style={({ pressed }) => [pressed && { opacity: 0.9 }]}
+          >
             <View style={styles.astro}>
               <View style={styles.astroIcon}>
                 <Text style={{ fontSize: 24 }}>🔮</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.astroTitle}>Ask the Astrologer</Text>
-                <Text style={styles.astroSub}>Chat about your reading — love, money, luck…</Text>
+                <Text style={styles.astroTitle}>Ask the Astrologer {pro ? "" : "🔒"}</Text>
+                <Text style={styles.astroSub}>
+                  {pro ? "Chat about your reading — love, money, luck…" : "Pro feature — unlock to chat"}
+                </Text>
               </View>
               <Icon name="chatbubbles" size={22} />
             </View>
@@ -187,7 +192,7 @@ export default function Reading() {
             <Card style={styles.premium}>
               <View style={styles.proRow}>
                 <Chip label="✦ PRO" color={colors.cosmic} />
-                <Text style={styles.price}>$14 · lifetime</Text>
+                <Text style={styles.price}>$9 / month</Text>
               </View>
               <Text style={styles.premiumTitle}>Unlock your full story</Text>
               {PRO_PERKS.map((p) => (

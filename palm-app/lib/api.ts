@@ -82,13 +82,16 @@ export const api = {
     }),
 
   // --- palm ---
-  scan: (image: string, handedness: "Left" | "Right" | "Unknown" = "Unknown") =>
+  scan: async (image: string, handedness: "Left" | "Right" | "Unknown" = "Unknown") =>
     request<{
       scanId?: string;
       result?: AnalysisResult;
       notPalm?: boolean;
+      requiresPro?: boolean;
       message?: string;
-    }>("/api/mobile/scan", { body: { image, handedness } }),
+    }>("/api/mobile/scan", {
+      body: { image, handedness, proToken: (await getProToken()) ?? undefined },
+    }),
   history: () => request<{ scans: ScanSummary[]; signedIn: boolean }>("/api/history"),
   getScan: (id: string) => request<{ result: AnalysisResult }>(`/api/scan/${id}`),
   report: (scanId: string, proToken: string | null) =>
@@ -97,6 +100,8 @@ export const api = {
     }),
   redeem: (code: string) =>
     request<{ pro: boolean; proToken: string }>("/api/mobile/redeem", { body: { code } }),
-  chat: (scanId: string, messages: ChatMessage[]) =>
-    request<{ reply: string }>("/api/mobile/chat", { body: { scanId, messages } }),
+  chat: async (scanId: string, messages: ChatMessage[]) =>
+    request<{ reply: string }>("/api/mobile/chat", {
+      body: { scanId, messages, proToken: (await getProToken()) ?? undefined },
+    }),
 };

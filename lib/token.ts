@@ -21,13 +21,17 @@ export function issueUnlockToken(scanId: string): string {
   return `${Buffer.from(payload).toString("base64url")}.${sig}`;
 }
 
-/** Create a Pro-entitlement token bound to an owner (user id). Permanent. */
-export function issueProToken(ownerKey: string): string {
-  const payload = `pro:${ownerKey}.${Date.now()}`;
+/**
+ * Create a Pro-entitlement token bound to an owner (user id).
+ * expiresAt = 0 → never expires (used by the launch coupon).
+ * expiresAt = ms timestamp → expires then (used by the 30-day subscription).
+ */
+export function issueProToken(ownerKey: string, expiresAt = 0): string {
+  const payload = `pro:${ownerKey}:${expiresAt}.${Date.now()}`;
   return `${Buffer.from(payload).toString("base64url")}.${sign(payload)}`;
 }
 
-/** Verify a Pro token belongs to the given owner. */
+/** Verify a Pro token belongs to the given owner and hasn't expired. */
 export function verifyProToken(token: string | undefined, ownerKey: string): boolean {
   if (!token) return false;
   const parts = token.split(".");
@@ -43,7 +47,11 @@ export function verifyProToken(token: string | undefined, ownerKey: string): boo
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return false;
-  return payload.startsWith(`pro:${ownerKey}.`);
+  if (!payload.startsWith(`pro:${ownerKey}:`)) return false;
+  // payload = pro:<ownerKey>:<expiresAt>.<issuedAt>
+  const expiresAt = Number(payload.slice(`pro:${ownerKey}:`.length).split(".")[0]);
+  if (expiresAt > 0 && Date.now() > expiresAt) return false;
+  return true;
 }
 
 /** Verify a token belongs to the given scan id. */
