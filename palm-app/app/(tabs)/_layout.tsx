@@ -1,5 +1,6 @@
 import { Redirect, Tabs } from "expo-router";
 import { Text } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth";
 import { colors } from "@/lib/theme";
 
@@ -9,6 +10,7 @@ function TabEmoji({ char, focused }: { char: string; focused: boolean }) {
 
 export default function TabsLayout() {
   const { user, loading } = useAuth();
+  const insets = useSafeAreaInsets();
   if (!loading && !user) return <Redirect href="/(auth)/login" />;
 
   return (
@@ -20,9 +22,10 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.bgElevated,
           borderTopColor: colors.cardBorder,
-          height: 62,
+          // Clear the Android nav / gesture bar so tabs never sit behind it.
+          height: 60 + insets.bottom,
           paddingTop: 6,
-          paddingBottom: 8,
+          paddingBottom: insets.bottom + 6,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
       }}
