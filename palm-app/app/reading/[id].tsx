@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ScrollView,
   Text,
@@ -7,10 +7,14 @@ import {
   Pressable,
   ActivityIndicator,
   TextInput,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { captureRef } from "react-native-view-shot";
+import * as Sharing from "expo-sharing";
 import { Icon } from "@/components/Icon";
+import { ShareCard } from "@/components/ShareCard";
 import { api, getProToken, setProToken } from "@/lib/api";
 import type { AnalysisResult, PremiumReport } from "@/lib/types";
 import { Card, Chip } from "@/components/ui";
@@ -41,6 +45,8 @@ export default function Reading() {
   const [reportBusy, setReportBusy] = useState(false);
   const [reportErr, setReportErr] = useState<string | null>(null);
 
+  const shareRef = useRef<View>(null);
+  const [sharing, setSharing] = useState(false);
   const [pro, setPro] = useState(false);
   const [showRedeem, setShowRedeem] = useState(false);
   const [code, setCode] = useState("");
@@ -80,6 +86,21 @@ export default function Reading() {
     }
   }
 
+  async function share() {
+    if (sharing) return;
+    setSharing(true);
+    try {
+      const uri = await captureRef(shareRef, { format: "png", quality: 1 });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: "image/png", dialogTitle: "Share your palm reading" });
+      }
+    } catch (e) {
+      Alert.alert("Couldn't share", (e as Error).message);
+    } finally {
+      setSharing(false);
+    }
+  }
+
   async function redeem() {
     const c = code.trim();
     if (!c || redeemBusy) return;
@@ -105,7 +126,13 @@ export default function Reading() {
           <Icon name="chevron-back" color={colors.text} size={24} />
         </Pressable>
         <Text style={styles.headerTitle}>Your Reading</Text>
-        <View style={{ width: 40 }} />
+        <Pressable onPress={share} hitSlop={10} style={styles.iconBtn} disabled={!result}>
+          {sharing ? (
+            <ActivityIndicator color={colors.cosmic} size="small" />
+          ) : (
+            <Text style={{ fontSize: 20 }}>📤</Text>
+          )}
+        </Pressable>
       </View>
 
       {!result && !error && (
@@ -238,6 +265,13 @@ export default function Reading() {
           )}
         </ScrollView>
       )}
+
+      {/* Off-screen card captured for sharing */}
+      {result && (
+        <View style={styles.offscreen} pointerEvents="none">
+          <ShareCard ref={shareRef} result={result} report={report} />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -285,4 +319,5 @@ const styles = StyleSheet.create({
   hlValue: { color: colors.cosmic600, fontSize: font.body, fontWeight: "800", marginTop: 2, textAlign: "center" },
   chapterTitle: { color: colors.text, fontSize: font.h3, fontWeight: "800" },
   chapterBody: { color: colors.textDim, fontSize: font.body, lineHeight: 22, marginTop: space.sm },
+  offscreen: { position: "absolute", top: -10000, left: 0 },
 });
