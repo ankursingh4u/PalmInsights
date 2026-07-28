@@ -25,7 +25,7 @@ const BodySchema = z.object({
 });
 
 // "Ask the Astrologer" — Pro-only (astrologer chat is a paid feature). Requires
-// a valid Pro token (from the launch coupon or the $9/30-day subscription) and
+// a valid Pro token (from the launch coupon or the monthly subscription) and
 // is capped per day to protect the AI budget.
 export async function POST(req: NextRequest) {
   const limited = enforceRateLimit(req, "mobilechat", 30, 60_000);

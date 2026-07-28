@@ -15,7 +15,7 @@ import { captureRef } from "react-native-view-shot";
 import * as Sharing from "expo-sharing";
 import { Icon } from "@/components/Icon";
 import { ShareCard } from "@/components/ShareCard";
-import { subscribePro } from "@/lib/billing";
+import { subscribePro, useProPrice } from "@/lib/billing";
 import { api, getProToken, setProToken } from "@/lib/api";
 import type { AnalysisResult, PremiumReport } from "@/lib/types";
 import { Card, Chip } from "@/components/ui";
@@ -55,6 +55,7 @@ export default function Reading() {
   const [redeemErr, setRedeemErr] = useState<string | null>(null);
   const [subBusy, setSubBusy] = useState(false);
   const [subErr, setSubErr] = useState<string | null>(null);
+  const { price, period } = useProPrice();
 
   async function goPro() {
     if (subBusy) return;
@@ -239,7 +240,9 @@ export default function Reading() {
             <Card style={styles.premium}>
               <View style={styles.proRow}>
                 <Chip label="✦ PRO" color={colors.cosmic} />
-                <Text style={styles.price}>$9 / month</Text>
+                <Text style={styles.price}>
+                  {price} / {period}
+                </Text>
               </View>
               <Text style={styles.premiumTitle}>Unlock your full story</Text>
               {PRO_PERKS.map((p) => (
@@ -282,7 +285,9 @@ export default function Reading() {
                     {subBusy ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
-                      <Text style={styles.revealText}>Subscribe — $9/month</Text>
+                      <Text style={styles.revealText}>
+                        Subscribe — {price}/{period}
+                      </Text>
                     )}
                   </Pressable>
                   <Pressable onPress={() => setShowRedeem(true)}>

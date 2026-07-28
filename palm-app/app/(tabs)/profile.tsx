@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/Icon";
 import { useAuth } from "@/lib/auth";
 import { api, getProToken, setProToken } from "@/lib/api";
-import { subscribePro } from "@/lib/billing";
+import { subscribePro, useProPrice } from "@/lib/billing";
 import { Card } from "@/components/ui";
 import { colors, font, radius, space } from "@/lib/theme";
 
@@ -40,6 +40,7 @@ export default function Profile() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [subBusy, setSubBusy] = useState(false);
+  const { price, period } = useProPrice();
 
   useEffect(() => {
     getProToken().then((t) => setPro(Boolean(t)));
@@ -104,7 +105,9 @@ export default function Profile() {
           <Card style={styles.proCard}>
             <View style={styles.proRow}>
               <Text style={styles.proBadge}>✦ Go PRO</Text>
-              <Text style={styles.proPrice}>$9 / month</Text>
+              <Text style={styles.proPrice}>
+                {price} / {period}
+              </Text>
             </View>
             <Text style={styles.proSub}>20 readings, 60 astrologer chats &amp; 10 Deep Reports a month.</Text>
             {showRedeem ? (
@@ -129,7 +132,9 @@ export default function Profile() {
                   {subBusy ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.proBtnText}>Subscribe — $9/month</Text>
+                    <Text style={styles.proBtnText}>
+                      Subscribe — {price}/{period}
+                    </Text>
                   )}
                 </Pressable>
                 <Pressable onPress={() => setShowRedeem(true)}>
