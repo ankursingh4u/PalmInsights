@@ -2,7 +2,7 @@
   "expo": {
     "name": "PalmInsight",
     "slug": "palminsight",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "scheme": "palminsight",
     "userInterfaceStyle": "light",
@@ -16,6 +16,7 @@
     },
     "android": {
       "package": "live.bolddev.palminsight",
+      "versionCode": 10,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-foreground.png",
         "backgroundColor": "#6d28d9"
