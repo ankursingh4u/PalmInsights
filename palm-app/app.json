@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "scheme": "palminsight",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "backgroundColor": "#F7F6FB",
     "icon": "./assets/icon.png",
     "splash": {
@@ -43,8 +43,7 @@
           ]
         }
       ],
-      "@react-native-google-signin/google-signin",
-      "react-native-iap"
+      "@react-native-google-signin/google-signin"
     ]
   }
 }
