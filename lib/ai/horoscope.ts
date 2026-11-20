@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { config, aiEnabled } from "../config";
+import { forGemini } from "./geminiSchema";
 import type { AnalysisResult, DailyGuidance } from "../types";
 
 // Rich daily lifestyle guidance derived from a palm reading: a short horoscope
@@ -108,7 +109,7 @@ async function callGemini(model: string, lines: string, dateStr: string): Promis
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM }] },
       contents: [{ role: "user", parts: [{ text: userPrompt(lines, dateStr) }] }],
-      generationConfig: { responseMimeType: "application/json", responseSchema: SCHEMA, maxOutputTokens: 500 },
+      generationConfig: { responseMimeType: "application/json", responseSchema: forGemini(SCHEMA), maxOutputTokens: 500 },
     }),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);

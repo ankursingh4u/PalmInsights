@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { config, aiEnabled } from "../config";
+import { forGemini } from "./geminiSchema";
 import type { LineKey } from "../types";
 
 // ---------------------------------------------------------------------------
@@ -274,7 +275,7 @@ async function callGemini(model: string, image: string, keys: LineKey[], report:
           ],
         },
       ],
-      generationConfig: { responseMimeType: "application/json", responseSchema: jsonSchema(report), maxOutputTokens: 4096 },
+      generationConfig: { responseMimeType: "application/json", responseSchema: forGemini(jsonSchema(report)), maxOutputTokens: 4096 },
     }),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
