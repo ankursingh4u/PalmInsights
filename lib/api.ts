@@ -40,6 +40,7 @@ export function analyze(
 ): Promise<{
   scanId?: string;
   result?: AnalysisResult;
+  token?: string;
   notPalm?: boolean;
   requiresLogin?: boolean;
   message?: string;

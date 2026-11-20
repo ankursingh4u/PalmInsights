@@ -218,7 +218,8 @@ export function ScanFlow({ priceLabel, baseUrl }: { priceLabel: string; baseUrl:
       }
       const { scanId, result } = resp;
       setScanId(scanId);
-      setToken(null);
+      setToken(resp.token ?? null);
+      if (resp.token) localStorage.setItem(tokenKey(scanId), resp.token);
       setNeedSignup(false);
       sessionStorage.setItem(SS.scanId, scanId);
       sessionStorage.setItem(SS.result, JSON.stringify(result));

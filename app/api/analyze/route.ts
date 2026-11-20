@@ -8,6 +8,7 @@ import { store } from "@/lib/store";
 import { getOwnerKey, getSessionUserId } from "@/lib/auth";
 import { track } from "@/lib/analytics";
 import { enforceRateLimit } from "@/lib/ratelimit";
+import { issueUnlockToken } from "@/lib/token";
 
 // Anonymous (not signed-in) visitors get this many free readings before they
 // must sign up to read for more people.
@@ -81,9 +82,10 @@ export async function POST(req: NextRequest) {
     if (!image) {
       return NextResponse.json({ error: "Image required" }, { status: 400 });
     }
-    // Read the lines + trace their exact geometry in parallel (faster).
+    // Everything is free for now: read all four lines + the full report in
+    // one pass, no separate paid unlock step.
     const [vision, geo] = await Promise.all([
-      analyzePalmImage(image, { tier: "free", lines: ["life", "heart"] }),
+      analyzePalmImage(image, { tier: "paid", lines: ["life", "heart", "head", "fate"], report: true }),
       detectLineGeometry(image),
     ]);
 
@@ -107,13 +109,13 @@ export async function POST(req: NextRequest) {
 
     let full = applyVisionReading(geometry, vision);
     if (geo) full = applyLineGeometry(full, geo); // exact AI-traced overlay
-    await store.saveScan({ id, ownerKey, result: full, paid: false, image, personName: name, createdAt });
+    await store.saveScan({ id, ownerKey, result: full, paid: true, image, personName: name, createdAt });
     await track("scan_created", { ownerKey, scanId: id });
-    return NextResponse.json({ scanId: id, result: gateResult(full, false) });
+    return NextResponse.json({ scanId: id, result: gateResult(full, true), token: issueUnlockToken(id) });
   }
 
   // ---- No AI configured (local/dev demo): deterministic engine. ------------
-  await store.saveScan({ id, ownerKey, result: geometry, paid: false, image, personName: name, createdAt });
+  await store.saveScan({ id, ownerKey, result: geometry, paid: true, image, personName: name, createdAt });
   await track("scan_created", { ownerKey, scanId: id });
-  return NextResponse.json({ scanId: id, result: gateResult(geometry, false) });
+  return NextResponse.json({ scanId: id, result: gateResult(geometry, true), token: issueUnlockToken(id) });
 }

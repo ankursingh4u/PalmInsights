@@ -18,3 +18,4 @@ tsconfig.tsbuildinfo
 PRODUCT_OVERVIEW.md
 TESTING.md
 LAUNCH_GUIDE.md
+.env*

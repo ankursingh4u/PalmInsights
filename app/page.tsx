@@ -3,13 +3,12 @@ import { Logo } from "@/components/Logo";
 import { AuthMenu } from "@/components/AuthMenu";
 import { PalmArt } from "@/components/PalmArt";
 import { SiteFooter } from "@/components/SiteFooter";
-import { priceLabel } from "@/lib/config";
 
 const LINES = [
   { name: "Life Line", color: "text-life", desc: "Energy, resilience & vitality", free: true },
   { name: "Heart Line", color: "text-heart", desc: "Love & emotional nature", free: true },
-  { name: "Head Line", color: "text-head", desc: "Thinking & decision style", free: false },
-  { name: "Fate Line", color: "text-fate", desc: "Career & life direction", free: false },
+  { name: "Head Line", color: "text-head", desc: "Thinking & decision style", free: true },
+  { name: "Fate Line", color: "text-fate", desc: "Career & life direction", free: true },
 ];
 
 // Everything the product does — shown up front so visitors instantly get it.
@@ -122,16 +121,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Premium Deep Report */}
+      {/* Deep Report — free */}
       <section className="card premium-surface relative overflow-hidden p-8 text-center sm:p-12">
-        <span className="chip bg-cosmic-500/20 text-cosmic-200">✦ Deep Report · {priceLabel()}</span>
+        <span className="chip bg-cosmic-500/20 text-cosmic-200">✦ Deep Report · Free</span>
         <h2 className="mt-3 font-display text-3xl font-semibold">
-          Unlock the full picture
+          Get the full picture
         </h2>
         <p className="mx-auto mt-3 max-w-lg text-white/70">
           Six personalized chapters read from your palm — money, luck, love,
           career and more — plus your palm personality type and lucky
-          highlights. One-time {priceLabel()}.
+          highlights. Completely free.
         </p>
         <div className="mx-auto mt-7 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
           {REPORT.map((r) => (
