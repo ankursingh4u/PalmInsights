@@ -57,8 +57,8 @@ export const config = {
     anthropicPro: process.env.AI_ANTHROPIC_PRO || "claude-opus-4-8",
     openaiCheap: process.env.AI_OPENAI_CHEAP || "gpt-4o-mini",
     openaiPro: process.env.AI_OPENAI_PRO || "gpt-4o",
-    geminiCheap: process.env.AI_GEMINI_CHEAP || "gemini-2.0-flash",
-    geminiPro: process.env.AI_GEMINI_PRO || "gemini-2.0-flash",
+    geminiCheap: process.env.AI_GEMINI_CHEAP || "gemini-3.8-flash",
+    geminiPro: process.env.AI_GEMINI_PRO || "gemini-3.8-flash",
   },
 
   unlockSecret: process.env.UNLOCK_TOKEN_SECRET || "dev-only-change-me",
