@@ -40,6 +40,8 @@ interface Store {
   countScansByOwner(ownerKey: string): Promise<number>;
   /** Scans from today (UTC) by this owner that used the paid AI tier. */
   countPaidScansToday(ownerKey: string): Promise<number>;
+  /** "Ask the Astrologer" replies sent today (UTC) to this owner. */
+  countChatMessagesToday(ownerKey: string): Promise<number>;
   reassignOwner(fromKey: string, toKey: string): Promise<void>;
 
   // users
@@ -115,6 +117,14 @@ class MemoryStore implements Store {
     let n = 0;
     for (const r of this.scans.values()) {
       if (r.ownerKey === ownerKey && r.result.aiTier === "paid" && r.createdAt.slice(0, 10) === today) n++;
+    }
+    return n;
+  }
+  async countChatMessagesToday(ownerKey: string) {
+    const today = new Date().toISOString().slice(0, 10);
+    let n = 0;
+    for (const e of this.events) {
+      if (e.name === "astrologer_question" && e.ownerKey === ownerKey && e.createdAt.slice(0, 10) === today) n++;
     }
     return n;
   }
@@ -238,6 +248,16 @@ class SupabaseStore implements Store {
       .eq("owner_key", ownerKey)
       .gte("created_at", startOfDay);
     return (data ?? []).filter((d: any) => d.result?.aiTier === "paid").length;
+  }
+  async countChatMessagesToday(ownerKey: string) {
+    const startOfDay = new Date().toISOString().slice(0, 10) + "T00:00:00.000Z";
+    const { count } = await this.c
+      .from("palm_events")
+      .select("*", { count: "exact", head: true })
+      .eq("name", "astrologer_question")
+      .eq("owner_key", ownerKey)
+      .gte("created_at", startOfDay);
+    return count ?? 0;
   }
   async reassignOwner(fromKey: string, toKey: string) {
     await this.c.from("palm_scans").update({ owner_key: toKey }).eq("owner_key", fromKey);

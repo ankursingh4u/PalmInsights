@@ -8,6 +8,10 @@ import { enforceRateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
+// Keeps the paid Gemini chat cheap and abuse-resistant: each owner gets this
+// many astrologer replies per UTC day, then must wait until tomorrow.
+const MAX_CHAT_MESSAGES_PER_DAY = 10;
+
 const BodySchema = z.object({
   scanId: z.string().min(1),
   token: z.string().min(1),
@@ -51,6 +55,14 @@ export async function POST(req: NextRequest) {
   }
   if (!record.paid || !verifyUnlockToken(token, scanId)) {
     return NextResponse.json({ error: "Premium feature locked" }, { status: 403 });
+  }
+
+  const chatToday = await store.countChatMessagesToday(record.ownerKey);
+  if (chatToday >= MAX_CHAT_MESSAGES_PER_DAY) {
+    return NextResponse.json(
+      { error: "You've reached today's chat limit with the astrologer. Please come back tomorrow." },
+      { status: 429 }
+    );
   }
 
   const reply = await askAstrologer(record.result, messages);
