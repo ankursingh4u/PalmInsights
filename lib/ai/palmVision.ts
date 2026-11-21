@@ -159,20 +159,25 @@ Each section is a title plus a vivid 2-3 paragraph body array, second-person. Th
 // --- provider calls ---------------------------------------------------------
 
 interface Attempt {
-  provider: "anthropic" | "openai" | "gemini";
+  provider: "anthropic" | "openai" | "gemini" | "muse";
   model: string;
 }
 
 function chainFor(tier: "free" | "paid"): Attempt[] {
   const a = config.ai;
+  // Muse (paid, when configured) is the primary reader — it's what's being paid
+  // for specifically for palm-image analysis. Gemini (free) and the rest remain
+  // as no-cost fallbacks so a single provider outage never breaks a reading.
   const all: Attempt[] =
     tier === "paid"
       ? [
+          { provider: "muse", model: a.museModel },
           { provider: "gemini", model: a.geminiPro },
           { provider: "anthropic", model: a.anthropicPro },
           { provider: "openai", model: a.openaiPro },
         ]
       : [
+          { provider: "muse", model: a.museModel },
           { provider: "gemini", model: a.geminiCheap },
           { provider: "openai", model: a.openaiCheap },
           { provider: "anthropic", model: a.anthropicCheap },
@@ -181,7 +186,8 @@ function chainFor(tier: "free" | "paid"): Attempt[] {
     (x) =>
       (x.provider === "anthropic" && a.anthropicKey) ||
       (x.provider === "openai" && a.openaiKey) ||
-      (x.provider === "gemini" && a.geminiKey)
+      (x.provider === "gemini" && a.geminiKey) ||
+      (x.provider === "muse" && a.museKey)
   );
 }
 
@@ -254,6 +260,36 @@ async function callOpenAI(model: string, image: string, keys: LineKey[], report:
     }),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  return parse(data.choices?.[0]?.message?.content ?? "");
+}
+
+// Meta's Model API Chat Completions endpoint is OpenAI-compatible (same
+// image_url / response_format.json_schema shapes), so this mirrors callOpenAI.
+async function callMuse(model: string, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
+  const res = await fetch("https://api.meta.ai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.ai.museKey}` },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      response_format: {
+        type: "json_schema",
+        json_schema: { name: "palm_reading", strict: true, schema: jsonSchema(report) },
+      },
+      messages: [
+        { role: "system", content: SYSTEM },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: userPrompt(keys, report) },
+            { type: "image_url", image_url: { url: image.startsWith("data:") ? image : `data:image/jpeg;base64,${image}` } },
+          ],
+        },
+      ],
+    }),
+  });
+  if (!res.ok) throw new Error(`Muse ${res.status}: ${await res.text()}`);
   const data = await res.json();
   return parse(data.choices?.[0]?.message?.content ?? "");
 }
@@ -353,6 +389,7 @@ export async function detectLineGeometry(image: string): Promise<LinePoints | nu
 async function callOne(a: Attempt, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
   if (a.provider === "anthropic") return callAnthropic(a.model, image, keys, report);
   if (a.provider === "openai") return callOpenAI(a.model, image, keys, report);
+  if (a.provider === "muse") return callMuse(a.model, image, keys, report);
   return callGemini(a.model, image, keys, report);
 }
 
