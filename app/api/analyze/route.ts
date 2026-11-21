@@ -14,6 +14,10 @@ import { issueUnlockToken } from "@/lib/token";
 // must sign up to read for more people.
 const ANON_FREE_READINGS = 1;
 
+// Paid-tier (best accuracy) palm reads per owner per day; beyond this, scans
+// fall back to the free Gemini tier instead of being blocked or charged more.
+const PAID_SCANS_PER_DAY = 2;
+
 export const runtime = "nodejs";
 
 const LandmarkSchema = z.object({
@@ -82,20 +86,26 @@ export async function POST(req: NextRequest) {
     if (!image) {
       return NextResponse.json({ error: "Image required" }, { status: 400 });
     }
-    // Everything is free for now: read all four lines + the full report in
-    // one pass, no separate paid unlock step.
-    const [vision, geo] = await Promise.all([
-      analyzePalmImage(image, { tier: "paid", lines: ["life", "heart", "head", "fate"], report: true }),
+    // Everything is free to unlock for now: read all four lines + the full
+    // report in one pass, no separate paid unlock step. The AI MODEL tier used
+    // to read it is separately capped — best-accuracy (paid) providers for the
+    // first couple of scans each day, then the free Gemini tier after that.
+    const paidScansToday = await store.countPaidScansToday(ownerKey);
+    const allowPaid = paidScansToday < PAID_SCANS_PER_DAY;
+
+    const [analysis, geo] = await Promise.all([
+      analyzePalmImage(image, { tier: "paid", lines: ["life", "heart", "head", "fate"], report: true, allowPaid }),
       detectLineGeometry(image),
     ]);
 
     // AI unavailable (outage / no credit). Never fabricate a reading.
-    if (!vision) {
+    if (!analysis) {
       return NextResponse.json(
         { error: "Our palm reader is busy right now. Please try again in a moment." },
         { status: 503 }
       );
     }
+    const { vision, usedPaid } = analysis;
 
     // The AI judged this is not a readable palm — return its reason, no reading.
     if (!vision.isPalm || vision.lines.length === 0) {
@@ -109,6 +119,7 @@ export async function POST(req: NextRequest) {
 
     let full = applyVisionReading(geometry, vision);
     if (geo) full = applyLineGeometry(full, geo); // exact AI-traced overlay
+    full.aiTier = usedPaid ? "paid" : "free";
     await store.saveScan({ id, ownerKey, result: full, paid: true, image, personName: name, createdAt });
     await track("scan_created", { ownerKey, scanId: id });
     return NextResponse.json({ scanId: id, result: gateResult(full, true), token: issueUnlockToken(id) });

@@ -7,6 +7,10 @@ import { analyzePalmImage } from "@/lib/ai/palmVision";
 
 export const runtime = "nodejs";
 
+// Paid-tier (best accuracy) palm reads per owner per day; beyond this, scans
+// fall back to the free Gemini tier instead of being blocked or charged more.
+const PAID_SCANS_PER_DAY = 2;
+
 const BodySchema = z.object({
   scanId: z.string().min(1),
   token: z.string().min(1),
@@ -32,16 +36,21 @@ export async function POST(req: NextRequest) {
   // Upgrade the paid reading with the MOST CAPABLE model ("full potential"),
   // re-reading the real image for Head + Fate + the full report. Computed once
   // and cached on the record (head line marked "head-ai" once enhanced).
+  // Subject to the same daily paid-tier cap as a fresh scan.
   const head = record.result.lines.find((l) => l.key === "head");
   const alreadyEnhanced = head?.patternKey === "head-ai";
   if (record.image && !alreadyEnhanced) {
-    const vision = await analyzePalmImage(record.image, {
+    const paidScansToday = await store.countPaidScansToday(record.ownerKey);
+    const allowPaid = paidScansToday < PAID_SCANS_PER_DAY;
+    const analysis = await analyzePalmImage(record.image, {
       tier: "paid",
       lines: ["life", "heart", "head", "fate"],
       report: true,
+      allowPaid,
     });
-    if (vision?.lines?.length) {
-      const enhanced = applyVisionReading(record.result, vision);
+    if (analysis?.vision.lines?.length) {
+      const enhanced = applyVisionReading(record.result, analysis.vision);
+      enhanced.aiTier = analysis.usedPaid ? "paid" : "free";
       record.result = enhanced;
       await store.saveScan(record); // cache so we don't re-call the model
     }

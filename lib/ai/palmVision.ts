@@ -159,35 +159,35 @@ Each section is a title plus a vivid 2-3 paragraph body array, second-person. Th
 // --- provider calls ---------------------------------------------------------
 
 interface Attempt {
-  provider: "anthropic" | "openai" | "gemini" | "muse";
+  provider: "anthropic" | "openai" | "gemini" | "muse" | "openrouter";
   model: string;
+  paid: boolean;
 }
 
-function chainFor(tier: "free" | "paid"): Attempt[] {
+/**
+ * allowPaid=false → Gemini only, strictly free, used once the daily paid cap
+ * is spent. allowPaid=true → paid readers (best accuracy per dollar) tried
+ * first, with Gemini and the rest as no-cost fallbacks if they fail.
+ */
+function chainFor(tier: "free" | "paid", allowPaid: boolean): Attempt[] {
   const a = config.ai;
-  // Muse (paid, when configured) is the primary reader — it's what's being paid
-  // for specifically for palm-image analysis. Gemini (free) and the rest remain
-  // as no-cost fallbacks so a single provider outage never breaks a reading.
-  const all: Attempt[] =
-    tier === "paid"
-      ? [
-          { provider: "muse", model: a.museModel },
-          { provider: "gemini", model: a.geminiPro },
-          { provider: "anthropic", model: a.anthropicPro },
-          { provider: "openai", model: a.openaiPro },
-        ]
-      : [
-          { provider: "muse", model: a.museModel },
-          { provider: "gemini", model: a.geminiCheap },
-          { provider: "openai", model: a.openaiCheap },
-          { provider: "anthropic", model: a.anthropicCheap },
-        ];
+  const gemini: Attempt = { provider: "gemini", model: tier === "paid" ? a.geminiPro : a.geminiCheap, paid: false };
+  if (!allowPaid) return a.geminiKey ? [gemini] : [];
+
+  const all: Attempt[] = [
+    { provider: "openrouter", model: a.openrouterModel, paid: true },
+    { provider: "muse", model: a.museModel, paid: true },
+    gemini,
+    { provider: "anthropic", model: tier === "paid" ? a.anthropicPro : a.anthropicCheap, paid: true },
+    { provider: "openai", model: tier === "paid" ? a.openaiPro : a.openaiCheap, paid: true },
+  ];
   return all.filter(
     (x) =>
       (x.provider === "anthropic" && a.anthropicKey) ||
       (x.provider === "openai" && a.openaiKey) ||
       (x.provider === "gemini" && a.geminiKey) ||
-      (x.provider === "muse" && a.museKey)
+      (x.provider === "muse" && a.museKey) ||
+      (x.provider === "openrouter" && a.openrouterKey)
   );
 }
 
@@ -294,6 +294,36 @@ async function callMuse(model: string, image: string, keys: LineKey[], report: b
   return parse(data.choices?.[0]?.message?.content ?? "");
 }
 
+// OpenRouter's Chat Completions endpoint is also OpenAI-compatible, proxying
+// to the requested underlying model (e.g. anthropic/claude-haiku-5.5).
+async function callOpenRouter(model: string, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.ai.openrouterKey}` },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      response_format: {
+        type: "json_schema",
+        json_schema: { name: "palm_reading", strict: true, schema: jsonSchema(report) },
+      },
+      messages: [
+        { role: "system", content: SYSTEM },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: userPrompt(keys, report) },
+            { type: "image_url", image_url: { url: image.startsWith("data:") ? image : `data:image/jpeg;base64,${image}` } },
+          ],
+        },
+      ],
+    }),
+  });
+  if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  return parse(data.choices?.[0]?.message?.content ?? "");
+}
+
 async function callGemini(model: string, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
   const { mime, base64 } = splitDataUrl(image);
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.ai.geminiKey}`;
@@ -390,20 +420,29 @@ async function callOne(a: Attempt, image: string, keys: LineKey[], report: boole
   if (a.provider === "anthropic") return callAnthropic(a.model, image, keys, report);
   if (a.provider === "openai") return callOpenAI(a.model, image, keys, report);
   if (a.provider === "muse") return callMuse(a.model, image, keys, report);
+  if (a.provider === "openrouter") return callOpenRouter(a.model, image, keys, report);
   return callGemini(a.model, image, keys, report);
+}
+
+export interface VisionAnalysis {
+  vision: VisionResult;
+  /** True when a paid provider (OpenRouter/Muse/direct OpenAI/Anthropic) served this reading. */
+  usedPaid: boolean;
 }
 
 /**
  * Analyze the palm image and return interpretations for the given lines.
  * Walks the provider chain for the tier; returns null if AI is disabled or
  * every provider fails (callers then fall back to the deterministic engine).
+ * `allowPaid` gates whether paid providers are attempted at all (the 2/day
+ * cap) — when false, only the free Gemini tier is tried.
  */
 export async function analyzePalmImage(
   image: string,
-  opts: { tier: "free" | "paid"; lines: LineKey[]; report?: boolean }
-): Promise<VisionResult | null> {
+  opts: { tier: "free" | "paid"; lines: LineKey[]; report?: boolean; allowPaid: boolean }
+): Promise<VisionAnalysis | null> {
   if (!aiEnabled || !image) return null;
-  const chain = chainFor(opts.tier);
+  const chain = chainFor(opts.tier, opts.allowPaid);
   let lastErr: unknown = null;
   for (const a of chain) {
     try {
@@ -412,7 +451,7 @@ export async function analyzePalmImage(
       result.lines = result.lines
         .filter((l) => opts.lines.includes(l.key))
         .map((l) => ({ ...l, confidence: Math.round(Math.max(40, Math.min(99, l.confidence))) }));
-      return result;
+      return { vision: result, usedPaid: a.paid };
     } catch (err) {
       lastErr = err;
       // try next provider

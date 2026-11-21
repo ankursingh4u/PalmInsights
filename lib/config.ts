@@ -53,6 +53,7 @@ export const config = {
     openaiKey: process.env.OPENAI_API_KEY || "",
     geminiKey: process.env.GEMINI_API_KEY || "",
     museKey: process.env.META_MODEL_API_KEY || "",
+    openrouterKey: process.env.OPENROUTER_API_KEY || "",
     // Overridable model ids (sensible defaults baked in lib/ai/palmVision.ts).
     anthropicCheap: process.env.AI_ANTHROPIC_CHEAP || "claude-haiku-4-5",
     anthropicPro: process.env.AI_ANTHROPIC_PRO || "claude-opus-4-8",
@@ -61,6 +62,8 @@ export const config = {
     geminiCheap: process.env.AI_GEMINI_CHEAP || "gemini-3.5-flash",
     geminiPro: process.env.AI_GEMINI_PRO || "gemini-3.5-flash",
     museModel: process.env.AI_MUSE_MODEL || "muse-ember-1.0",
+    // Paid, rate-limited (2/day) palm-vision tier — best accuracy per dollar.
+    openrouterModel: process.env.AI_OPENROUTER_MODEL || "anthropic/claude-haiku-5.5",
   },
 
   unlockSecret: process.env.UNLOCK_TOKEN_SECRET || "dev-only-change-me",

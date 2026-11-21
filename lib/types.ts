@@ -75,6 +75,8 @@ export interface AnalysisResult {
   report?: PremiumReport;
   /** Locked premium line previews (titles only) when not unlocked. */
   lockedPreviews?: { key: LineKey; label: string; color: string }[];
+  /** Which model tier actually produced this reading (paid daily cap tracking). */
+  aiTier?: "free" | "paid";
 }
 
 export interface CompatibilityResult {
