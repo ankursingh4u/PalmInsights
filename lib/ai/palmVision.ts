@@ -168,9 +168,9 @@ function chainFor(tier: "free" | "paid"): Attempt[] {
   const all: Attempt[] =
     tier === "paid"
       ? [
+          { provider: "gemini", model: a.geminiPro },
           { provider: "anthropic", model: a.anthropicPro },
           { provider: "openai", model: a.openaiPro },
-          { provider: "gemini", model: a.geminiPro },
         ]
       : [
           { provider: "gemini", model: a.geminiCheap },

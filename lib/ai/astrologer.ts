@@ -56,9 +56,9 @@ interface Attempt {
 function chain(): Attempt[] {
   const a = config.ai;
   const all: Attempt[] = [
+    { provider: "gemini", model: a.geminiPro },
     { provider: "anthropic", model: a.anthropicPro },
     { provider: "openai", model: a.openaiPro },
-    { provider: "gemini", model: a.geminiPro },
   ];
   return all.filter(
     (x) =>
