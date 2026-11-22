@@ -143,7 +143,10 @@ export type AnalyticsEventName =
   | "premium_unlocked"
   | "compatibility_run"
   | "astrologer_question"
-  | "share_created";
+  | "share_created"
+  // owner_key on this event holds the client IP, not a user/anon id — used to
+  // cap paid palm-vision reads per IP as a backstop against cookie-clearing.
+  | "paid_scan_ip";
 
 export interface AnalyticsEvent {
   name: AnalyticsEventName;

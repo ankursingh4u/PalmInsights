@@ -4,6 +4,8 @@ import { store } from "@/lib/store";
 import { verifyUnlockToken } from "@/lib/token";
 import { gateResult, applyVisionReading } from "@/lib/palmistry";
 import { analyzePalmImage } from "@/lib/ai/palmVision";
+import { clientIp } from "@/lib/ratelimit";
+import { track } from "@/lib/analytics";
 
 export const runtime = "nodejs";
 
@@ -40,8 +42,12 @@ export async function POST(req: NextRequest) {
   const head = record.result.lines.find((l) => l.key === "head");
   const alreadyEnhanced = head?.patternKey === "head-ai";
   if (record.image && !alreadyEnhanced) {
-    const paidScansToday = await store.countPaidScansToday(record.ownerKey);
-    const allowPaid = paidScansToday < PAID_SCANS_PER_DAY;
+    const ip = clientIp(req);
+    const [paidScansToday, paidScansTodayByIp] = await Promise.all([
+      store.countPaidScansToday(record.ownerKey),
+      store.countPaidScansTodayByIp(ip),
+    ]);
+    const allowPaid = paidScansToday < PAID_SCANS_PER_DAY && paidScansTodayByIp < PAID_SCANS_PER_DAY;
     const analysis = await analyzePalmImage(record.image, {
       tier: "paid",
       lines: ["life", "heart", "head", "fate"],
@@ -53,6 +59,7 @@ export async function POST(req: NextRequest) {
       enhanced.aiTier = analysis.usedPaid ? "paid" : "free";
       record.result = enhanced;
       await store.saveScan(record); // cache so we don't re-call the model
+      if (analysis.usedPaid) await track("paid_scan_ip", { ownerKey: ip, scanId: record.id });
     }
   }
 

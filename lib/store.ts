@@ -42,6 +42,8 @@ interface Store {
   countPaidScansToday(ownerKey: string): Promise<number>;
   /** "Ask the Astrologer" replies sent today (UTC) to this owner. */
   countChatMessagesToday(ownerKey: string): Promise<number>;
+  /** Paid palm-vision reads served today (UTC) to this client IP. */
+  countPaidScansTodayByIp(ip: string): Promise<number>;
   reassignOwner(fromKey: string, toKey: string): Promise<void>;
 
   // users
@@ -125,6 +127,14 @@ class MemoryStore implements Store {
     let n = 0;
     for (const e of this.events) {
       if (e.name === "astrologer_question" && e.ownerKey === ownerKey && e.createdAt.slice(0, 10) === today) n++;
+    }
+    return n;
+  }
+  async countPaidScansTodayByIp(ip: string) {
+    const today = new Date().toISOString().slice(0, 10);
+    let n = 0;
+    for (const e of this.events) {
+      if (e.name === "paid_scan_ip" && e.ownerKey === ip && e.createdAt.slice(0, 10) === today) n++;
     }
     return n;
   }
@@ -256,6 +266,16 @@ class SupabaseStore implements Store {
       .select("*", { count: "exact", head: true })
       .eq("name", "astrologer_question")
       .eq("owner_key", ownerKey)
+      .gte("created_at", startOfDay);
+    return count ?? 0;
+  }
+  async countPaidScansTodayByIp(ip: string) {
+    const startOfDay = new Date().toISOString().slice(0, 10) + "T00:00:00.000Z";
+    const { count } = await this.c
+      .from("palm_events")
+      .select("*", { count: "exact", head: true })
+      .eq("name", "paid_scan_ip")
+      .eq("owner_key", ip)
       .gte("created_at", startOfDay);
     return count ?? 0;
   }

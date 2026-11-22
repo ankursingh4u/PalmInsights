@@ -7,7 +7,7 @@ import { aiEnabled } from "@/lib/config";
 import { store } from "@/lib/store";
 import { getOwnerKey, getSessionUserId } from "@/lib/auth";
 import { track } from "@/lib/analytics";
-import { enforceRateLimit } from "@/lib/ratelimit";
+import { enforceRateLimit, clientIp } from "@/lib/ratelimit";
 import { issueUnlockToken } from "@/lib/token";
 
 // Anonymous (not signed-in) visitors get this many free readings before they
@@ -90,8 +90,15 @@ export async function POST(req: NextRequest) {
     // report in one pass, no separate paid unlock step. The AI MODEL tier used
     // to read it is separately capped — best-accuracy (paid) providers for the
     // first couple of scans each day, then the free Gemini tier after that.
-    const paidScansToday = await store.countPaidScansToday(ownerKey);
-    const allowPaid = paidScansToday < PAID_SCANS_PER_DAY;
+    const ip = clientIp(req);
+    const [paidScansToday, paidScansTodayByIp] = await Promise.all([
+      store.countPaidScansToday(ownerKey),
+      store.countPaidScansTodayByIp(ip),
+    ]);
+    // Both the owner (account/anon-cookie) AND the client IP must be under
+    // cap — the IP check is a backstop against bypassing the cookie cap by
+    // clearing cookies / using incognito from the same network.
+    const allowPaid = paidScansToday < PAID_SCANS_PER_DAY && paidScansTodayByIp < PAID_SCANS_PER_DAY;
 
     const [analysis, geo] = await Promise.all([
       analyzePalmImage(image, { tier: "paid", lines: ["life", "heart", "head", "fate"], report: true, allowPaid }),
@@ -122,6 +129,7 @@ export async function POST(req: NextRequest) {
     full.aiTier = usedPaid ? "paid" : "free";
     await store.saveScan({ id, ownerKey, result: full, paid: true, image, personName: name, createdAt });
     await track("scan_created", { ownerKey, scanId: id });
+    if (usedPaid) await track("paid_scan_ip", { ownerKey: ip, scanId: id });
     return NextResponse.json({ scanId: id, result: gateResult(full, true), token: issueUnlockToken(id) });
   }
 
