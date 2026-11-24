@@ -109,10 +109,10 @@ export async function POST(req: NextRequest) {
     if (!image) {
       return NextResponse.json({ error: "Image required" }, { status: 400 });
     }
-    // Everything is free to unlock for now: read all four lines + the full
-    // report in one pass, no separate paid unlock step. The AI MODEL tier used
-    // to read it is separately capped — best-accuracy (paid) providers for the
-    // first couple of scans each day, then the free Gemini tier after that.
+    // Image scans always use the paid (best-accuracy) tier — capped at
+    // PAID_SCANS_PER_DAY, no free-tier fallback. Once the cap is hit, scanning
+    // is blocked for the rest of the day rather than silently degraded to a
+    // cheaper model.
     const ip = clientIp(req);
     const [paidScansToday, paidScansTodayByIp] = await Promise.all([
       store.countPaidScansToday(ownerKey),
@@ -122,6 +122,13 @@ export async function POST(req: NextRequest) {
     // cap — the IP check is a backstop against bypassing the cookie cap by
     // clearing cookies / using incognito from the same network.
     const allowPaid = paidScansToday < PAID_SCANS_PER_DAY && paidScansTodayByIp < PAID_SCANS_PER_DAY;
+
+    if (!allowPaid) {
+      return NextResponse.json({
+        limitReached: true,
+        message: `You've used today's ${PAID_SCANS_PER_DAY} palm scans. Come back tomorrow for more.`,
+      });
+    }
 
     const [analysis, geo] = await Promise.all([
       analyzePalmImage(image, { tier: "paid", lines: ["life", "heart", "head", "fate"], report: true, allowPaid }),

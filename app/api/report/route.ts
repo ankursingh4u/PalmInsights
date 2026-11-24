@@ -48,12 +48,16 @@ export async function POST(req: NextRequest) {
       store.countPaidScansTodayByIp(ip),
     ]);
     const allowPaid = paidScansToday < PAID_SCANS_PER_DAY && paidScansTodayByIp < PAID_SCANS_PER_DAY;
-    const analysis = await analyzePalmImage(record.image, {
-      tier: "paid",
-      lines: ["life", "heart", "head", "fate"],
-      report: true,
-      allowPaid,
-    });
+    // Paid-tier only — skip the enhance pass entirely once the daily cap is
+    // hit, rather than falling back to a cheaper model for it.
+    const analysis = allowPaid
+      ? await analyzePalmImage(record.image, {
+          tier: "paid",
+          lines: ["life", "heart", "head", "fate"],
+          report: true,
+          allowPaid,
+        })
+      : null;
     if (analysis?.vision.lines?.length) {
       const enhanced = applyVisionReading(record.result, analysis.vision);
       enhanced.aiTier = analysis.usedPaid ? "paid" : "free";
