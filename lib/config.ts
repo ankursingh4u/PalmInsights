@@ -59,7 +59,11 @@ export const config = {
     anthropicPro: process.env.AI_ANTHROPIC_PRO || "claude-opus-4-8",
     openaiCheap: process.env.AI_OPENAI_CHEAP || "gpt-4o-mini",
     openaiPro: process.env.AI_OPENAI_PRO || "gpt-4o",
-    geminiCheap: process.env.AI_GEMINI_CHEAP || "gemini-3.5-flash",
+    // Cheap tier doubles as the ONLY free-tier fallback once the daily paid
+    // cap is spent (no other provider is tried then) — kept on an established
+    // model rather than the newest release, since new releases see spikes in
+    // demand that return transient 503s with no further fallback to absorb them.
+    geminiCheap: process.env.AI_GEMINI_CHEAP || "gemini-2.5-flash",
     geminiPro: process.env.AI_GEMINI_PRO || "gemini-3.5-flash",
     museModel: process.env.AI_MUSE_MODEL || "muse-ember-1.0",
     // Paid, rate-limited (2/day) palm-vision tier — best accuracy per dollar.
