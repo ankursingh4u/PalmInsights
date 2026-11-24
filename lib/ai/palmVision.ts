@@ -324,7 +324,7 @@ async function callOpenRouter(model: string, image: string, keys: LineKey[], rep
   return parse(data.choices?.[0]?.message?.content ?? "");
 }
 
-async function callGemini(model: string, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
+async function callGeminiOnce(model: string, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
   const { mime, base64 } = splitDataUrl(image);
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.ai.geminiKey}`;
   const res = await fetch(url, {
@@ -348,6 +348,28 @@ async function callGemini(model: string, image: string, keys: LineKey[], report:
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text).join("") ?? "";
   return parse(text);
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Gemini occasionally returns 503 UNAVAILABLE ("high demand... usually
+// temporary") — a transient overload on Google's side, not a real failure.
+// This is the ONLY provider tried once the daily paid-tier cap is spent, so
+// without a retry here, that single transient blip turned into a hard
+// user-facing "palm reader is busy" error for the rest of the day.
+async function callGemini(model: string, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await callGeminiOnce(model, image, keys, report);
+    } catch (err) {
+      lastErr = err;
+      const transient = /\b(503|UNAVAILABLE|high demand)\b/i.test((err as Error).message || "");
+      if (!transient || attempt === 2) throw err;
+      await sleep(600 * (attempt + 1));
+    }
+  }
+  throw lastErr;
 }
 
 // --- exact line geometry ----------------------------------------------------
