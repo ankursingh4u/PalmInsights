@@ -26,8 +26,21 @@ const LandmarkSchema = z.object({
   z: z.number().optional(),
 });
 
+// The native app has no on-device hand-landmark detector (that's a browser-side
+// MediaPipe step on the website) — it sends only the image. These placeholder
+// points just keep the landmark-geometry math from crashing on empty input;
+// the AI vision trace (detectLineGeometry) overwrites them with real traced
+// points whenever it succeeds, so they're a silent fallback, never the norm.
+const MOBILE_FALLBACK_LANDMARKS = [
+  { x: 0.5, y: 0.9 }, { x: 0.42, y: 0.82 }, { x: 0.35, y: 0.72 }, { x: 0.3, y: 0.62 }, { x: 0.27, y: 0.52 },
+  { x: 0.42, y: 0.55 }, { x: 0.42, y: 0.4 }, { x: 0.42, y: 0.28 }, { x: 0.42, y: 0.18 },
+  { x: 0.5, y: 0.52 }, { x: 0.5, y: 0.35 }, { x: 0.5, y: 0.22 }, { x: 0.5, y: 0.1 },
+  { x: 0.58, y: 0.54 }, { x: 0.58, y: 0.38 }, { x: 0.58, y: 0.25 }, { x: 0.58, y: 0.14 },
+  { x: 0.66, y: 0.58 }, { x: 0.66, y: 0.46 }, { x: 0.66, y: 0.36 }, { x: 0.66, y: 0.28 },
+];
+
 const BodySchema = z.object({
-  landmarks: z.array(LandmarkSchema).length(21, "Expected 21 hand landmarks"),
+  landmarks: z.array(LandmarkSchema).length(21, "Expected 21 hand landmarks").optional(),
   handedness: z.enum(["Left", "Right", "Unknown"]).default("Unknown"),
   // Optional: store the palm image with the reading (opt-in consent).
   image: z.string().startsWith("data:image/").max(8_000_000).optional(),
@@ -58,11 +71,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { landmarks, handedness, image, personName } = parsed.data;
+  const { handedness, image, personName } = parsed.data;
+  let landmarks = parsed.data.landmarks;
+  if (!landmarks) {
+    if (!image) {
+      return NextResponse.json({ error: "landmarks or image required" }, { status: 400 });
+    }
+    if (!aiEnabled) {
+      return NextResponse.json({ error: "Landmarks required (no AI vision configured)." }, { status: 400 });
+    }
+    landmarks = MOBILE_FALLBACK_LANDMARKS;
+  }
   const id = crypto.randomUUID();
   const createdAt = new Date().toISOString();
-  const userId = getSessionUserId();
-  const ownerKey = getOwnerKey();
+  const userId = getSessionUserId(req);
+  const ownerKey = getOwnerKey(req);
 
   // Anonymous visitors get one free reading. To read for another person they
   // must sign up — which is also how we keep each person's reading consistent.

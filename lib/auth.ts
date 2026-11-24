@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
+import type { NextRequest } from "next/server";
 import { config } from "./config";
 import type { User, UserPublic } from "./types";
 
@@ -74,7 +75,25 @@ export function clearSession(): void {
   cookies().set(SESSION_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
 }
 
-export function getSessionUserId(): string | null {
+/** Same signed format as the session cookie — usable as a mobile bearer token. */
+export function issueSessionToken(userId: string): string {
+  return makeToken({ uid: userId, iat: Date.now() });
+}
+
+/**
+ * Resolve the signed-in user id. Native app requests carry no cookie jar, so
+ * when `req` is passed, an `Authorization: Bearer <token>` header (same signed
+ * format as the session cookie) is checked first; falls back to the cookie for
+ * website requests.
+ */
+export function getSessionUserId(req?: NextRequest): string | null {
+  if (req) {
+    const header = req.headers.get("authorization");
+    if (header?.startsWith("Bearer ")) {
+      const data = readToken<{ uid: string }>(header.slice(7));
+      if (data?.uid) return data.uid;
+    }
+  }
   const token = cookies().get(SESSION_COOKIE)?.value;
   const data = readToken<{ uid: string }>(token);
   return data?.uid ?? null;
@@ -102,8 +121,8 @@ export function getAnonId(): string | null {
 }
 
 /** The current owner key (user id if signed in, else anon id). */
-export function getOwnerKey(): string {
-  return getSessionUserId() ?? getOrCreateAnonId();
+export function getOwnerKey(req?: NextRequest): string {
+  return getSessionUserId(req) ?? getOrCreateAnonId();
 }
 
 // --- validation -------------------------------------------------------------
