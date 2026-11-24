@@ -76,7 +76,6 @@ async function callOpenAI(model: string, lines: string, dateStr: string): Promis
     body: JSON.stringify({
       model,
       max_tokens: 500,
-      temperature: 0,
       response_format: { type: "json_schema", json_schema: { name: "daily", strict: true, schema: SCHEMA } },
       messages: [
         { role: "system", content: SYSTEM },
