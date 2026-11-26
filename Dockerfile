@@ -23,4 +23,8 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 EXPOSE 3000
 ENV PORT=3000
+# Docker auto-injects HOSTNAME=<container-id>, which Next's standalone
+# server.js binds to instead of 0.0.0.0 — making the port unreachable from
+# other containers (Traefik included). Force the real bind address.
+ENV HOSTNAME=0.0.0.0
 CMD ["node", "server.js"]
