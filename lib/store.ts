@@ -1,5 +1,5 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { config, supabaseEnabled } from "./config";
+import { Pool } from "pg";
+import { config, databaseEnabled } from "./config";
 import type {
   AnalysisResult,
   AnalyticsEvent,
@@ -12,8 +12,8 @@ import type {
 // Persistence layer — the full PRD data model: Users, PalmScans, Reports,
 // Payments, plus analytics events.
 //
-// - Supabase (tables: palm_users, palm_scans, palm_payments, palm_events)
-//   when configured (see supabase/schema.sql).
+// - Postgres (tables: palm_users, palm_scans, palm_payments, palm_events)
+//   when DATABASE_URL is configured (see db/schema.sql).
 // - In-memory Map fallback otherwise, so the app runs with zero setup.
 //
 // The full reading (incl. premium "Reports") is stored on the scan row and
@@ -196,157 +196,119 @@ class MemoryStore implements Store {
   }
 }
 
-// --- supabase implementation -----------------------------------------------
+// --- postgres implementation -------------------------------------------------
 
-class SupabaseStore implements Store {
-  private c: SupabaseClient;
+class PostgresStore implements Store {
+  private pool: Pool;
   constructor() {
-    this.c = createClient(config.supabase.url, config.supabase.serviceRoleKey, {
-      auth: { persistSession: false },
-    });
+    this.pool = new Pool({ connectionString: config.database.url });
   }
   async saveScan(r: ScanRecord) {
-    await this.c.from("palm_scans").upsert({
-      id: r.id,
-      owner_key: r.ownerKey,
-      result: r.result,
-      paid: r.paid,
-      image: r.image ?? null,
-      person_name: r.personName ?? null,
-      created_at: r.createdAt,
-    });
+    await this.pool.query(
+      `insert into palm_scans (id, owner_key, result, paid, image, person_name, created_at)
+       values ($1, $2, $3, $4, $5, $6, $7)
+       on conflict (id) do update set
+         owner_key = excluded.owner_key, result = excluded.result, paid = excluded.paid,
+         image = excluded.image, person_name = excluded.person_name`,
+      [r.id, r.ownerKey, r.result, r.paid, r.image ?? null, r.personName ?? null, r.createdAt]
+    );
   }
   async getScan(id: string) {
-    const { data } = await this.c.from("palm_scans").select("*").eq("id", id).maybeSingle();
-    if (!data) return null;
-    return {
-      id: data.id,
-      ownerKey: data.owner_key,
-      result: data.result as AnalysisResult,
-      paid: Boolean(data.paid),
-      image: data.image ?? undefined,
-      personName: data.person_name ?? undefined,
-      createdAt: data.created_at,
-    };
+    const { rows } = await this.pool.query("select * from palm_scans where id = $1", [id]);
+    return rows[0] ? this.row(rows[0]) : null;
   }
   async setPaid(id: string) {
-    await this.c.from("palm_scans").update({ paid: true }).eq("id", id);
+    await this.pool.query("update palm_scans set paid = true where id = $1", [id]);
   }
   async setScanOwner(id: string, ownerKey: string) {
-    await this.c.from("palm_scans").update({ owner_key: ownerKey }).eq("id", id);
+    await this.pool.query("update palm_scans set owner_key = $1 where id = $2", [ownerKey, id]);
   }
   async listScansByOwner(ownerKey: string) {
-    const { data } = await this.c
-      .from("palm_scans")
-      .select("*")
-      .eq("owner_key", ownerKey)
-      .order("created_at", { ascending: false });
-    return (data ?? []).map((d) => toSummary(this.row(d)));
+    const { rows } = await this.pool.query(
+      "select * from palm_scans where owner_key = $1 order by created_at desc",
+      [ownerKey]
+    );
+    return rows.map((d) => toSummary(this.row(d)));
   }
   async countScansByOwner(ownerKey: string) {
-    const { count } = await this.c
-      .from("palm_scans")
-      .select("*", { count: "exact", head: true })
-      .eq("owner_key", ownerKey);
-    return count ?? 0;
+    const { rows } = await this.pool.query(
+      "select count(*)::int as n from palm_scans where owner_key = $1",
+      [ownerKey]
+    );
+    return rows[0]?.n ?? 0;
   }
   async countPaidScansToday(ownerKey: string) {
     const startOfDay = new Date().toISOString().slice(0, 10) + "T00:00:00.000Z";
-    const { data } = await this.c
-      .from("palm_scans")
-      .select("result")
-      .eq("owner_key", ownerKey)
-      .gte("created_at", startOfDay);
-    return (data ?? []).filter((d: any) => d.result?.aiTier === "paid").length;
+    const { rows } = await this.pool.query(
+      "select count(*)::int as n from palm_scans where owner_key = $1 and created_at >= $2 and result->>'aiTier' = 'paid'",
+      [ownerKey, startOfDay]
+    );
+    return rows[0]?.n ?? 0;
   }
   async countChatMessagesToday(ownerKey: string) {
     const startOfDay = new Date().toISOString().slice(0, 10) + "T00:00:00.000Z";
-    const { count } = await this.c
-      .from("palm_events")
-      .select("*", { count: "exact", head: true })
-      .eq("name", "astrologer_question")
-      .eq("owner_key", ownerKey)
-      .gte("created_at", startOfDay);
-    return count ?? 0;
+    const { rows } = await this.pool.query(
+      "select count(*)::int as n from palm_events where name = 'astrologer_question' and owner_key = $1 and created_at >= $2",
+      [ownerKey, startOfDay]
+    );
+    return rows[0]?.n ?? 0;
   }
   async countPaidScansTodayByIp(ip: string) {
     const startOfDay = new Date().toISOString().slice(0, 10) + "T00:00:00.000Z";
-    const { count } = await this.c
-      .from("palm_events")
-      .select("*", { count: "exact", head: true })
-      .eq("name", "paid_scan_ip")
-      .eq("owner_key", ip)
-      .gte("created_at", startOfDay);
-    return count ?? 0;
+    const { rows } = await this.pool.query(
+      "select count(*)::int as n from palm_events where name = 'paid_scan_ip' and owner_key = $1 and created_at >= $2",
+      [ip, startOfDay]
+    );
+    return rows[0]?.n ?? 0;
   }
   async reassignOwner(fromKey: string, toKey: string) {
-    await this.c.from("palm_scans").update({ owner_key: toKey }).eq("owner_key", fromKey);
+    await this.pool.query("update palm_scans set owner_key = $1 where owner_key = $2", [toKey, fromKey]);
   }
   async createUser(u: User) {
-    await this.c.from("palm_users").insert({
-      id: u.id,
-      email: u.email.toLowerCase(),
-      password_hash: u.passwordHash,
-      verified: u.verified ?? false,
-      verify_token: u.verifyToken ?? null,
-      created_at: u.createdAt,
-    });
+    await this.pool.query(
+      `insert into palm_users (id, email, password_hash, verified, verify_token, created_at)
+       values ($1, $2, $3, $4, $5, $6)`,
+      [u.id, u.email.toLowerCase(), u.passwordHash, u.verified ?? false, u.verifyToken ?? null, u.createdAt]
+    );
   }
   async getUserByVerifyToken(token: string) {
-    const { data } = await this.c
-      .from("palm_users")
-      .select("*")
-      .eq("verify_token", token)
-      .maybeSingle();
-    return data ? this.userRow(data) : null;
+    const { rows } = await this.pool.query("select * from palm_users where verify_token = $1", [token]);
+    return rows[0] ? this.userRow(rows[0]) : null;
   }
   async setVerified(userId: string) {
-    await this.c
-      .from("palm_users")
-      .update({ verified: true, verify_token: null })
-      .eq("id", userId);
+    await this.pool.query(
+      "update palm_users set verified = true, verify_token = null where id = $1",
+      [userId]
+    );
   }
   async getUserByEmail(email: string) {
-    const { data } = await this.c
-      .from("palm_users")
-      .select("*")
-      .eq("email", email.toLowerCase())
-      .maybeSingle();
-    return data ? this.userRow(data) : null;
+    const { rows } = await this.pool.query("select * from palm_users where email = $1", [email.toLowerCase()]);
+    return rows[0] ? this.userRow(rows[0]) : null;
   }
   async getUserById(id: string) {
-    const { data } = await this.c.from("palm_users").select("*").eq("id", id).maybeSingle();
-    return data ? this.userRow(data) : null;
+    const { rows } = await this.pool.query("select * from palm_users where id = $1", [id]);
+    return rows[0] ? this.userRow(rows[0]) : null;
   }
   async countUsers() {
-    const { count } = await this.c
-      .from("palm_users")
-      .select("*", { count: "exact", head: true });
-    return count ?? 0;
+    const { rows } = await this.pool.query("select count(*)::int as n from palm_users");
+    return rows[0]?.n ?? 0;
   }
   async recordPayment(p: Payment) {
-    await this.c.from("palm_payments").insert({
-      id: p.id,
-      scan_id: p.scanId,
-      owner_key: p.ownerKey,
-      amount_cents: p.amountCents,
-      currency: p.currency,
-      provider: p.provider,
-      status: p.status,
-      created_at: p.createdAt,
-    });
+    await this.pool.query(
+      `insert into palm_payments (id, scan_id, owner_key, amount_cents, currency, provider, status, created_at)
+       values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [p.id, p.scanId, p.ownerKey, p.amountCents, p.currency, p.provider, p.status, p.createdAt]
+    );
   }
   async recordEvent(e: AnalyticsEvent) {
-    await this.c.from("palm_events").insert({
-      name: e.name,
-      owner_key: e.ownerKey ?? null,
-      scan_id: e.scanId ?? null,
-      created_at: e.createdAt,
-    });
+    await this.pool.query(
+      "insert into palm_events (name, owner_key, scan_id, created_at) values ($1, $2, $3, $4)",
+      [e.name, e.ownerKey ?? null, e.scanId ?? null, e.createdAt]
+    );
   }
   async getEvents() {
-    const { data } = await this.c.from("palm_events").select("*");
-    return (data ?? []).map((d) => ({
+    const { rows } = await this.pool.query("select * from palm_events");
+    return rows.map((d) => ({
       name: d.name,
       ownerKey: d.owner_key ?? undefined,
       scanId: d.scan_id ?? undefined,
@@ -354,8 +316,8 @@ class SupabaseStore implements Store {
     })) as AnalyticsEvent[];
   }
   async getPayments() {
-    const { data } = await this.c.from("palm_payments").select("*");
-    return (data ?? []).map((d) => ({
+    const { rows } = await this.pool.query("select * from palm_payments");
+    return rows.map((d) => ({
       id: d.id,
       scanId: d.scan_id,
       ownerKey: d.owner_key,
@@ -367,29 +329,26 @@ class SupabaseStore implements Store {
     })) as Payment[];
   }
   async recentScans(limit: number) {
-    const { data } = await this.c
-      .from("palm_scans")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(limit);
-    return (data ?? []).map((d) => toSummary(this.row(d)));
+    const { rows } = await this.pool.query(
+      "select * from palm_scans order by created_at desc limit $1",
+      [limit]
+    );
+    return rows.map((d) => toSummary(this.row(d)));
   }
   async listDailyEmailRecipients() {
-    const { data: scans } = await this.c
-      .from("palm_scans")
-      .select("id, owner_key, created_at")
-      .eq("paid", true)
-      .order("created_at", { ascending: false });
-    const { data: users } = await this.c.from("palm_users").select("id, email");
-    const emailById = new Map((users ?? []).map((u: any) => [u.id, u.email]));
+    const { rows } = await this.pool.query(
+      `select s.owner_key, s.id as scan_id, u.email
+       from palm_scans s
+       join palm_users u on u.id::text = s.owner_key
+       where s.paid = true
+       order by s.created_at desc`
+    );
     const seen = new Set<string>();
     const out: { email: string; scanId: string }[] = [];
-    for (const s of scans ?? []) {
-      const email = emailById.get(s.owner_key);
-      if (email && !seen.has(s.owner_key)) {
-        seen.add(s.owner_key);
-        out.push({ email, scanId: s.id });
-      }
+    for (const r of rows) {
+      if (seen.has(r.owner_key)) continue;
+      seen.add(r.owner_key);
+      out.push({ email: r.email, scanId: r.scan_id });
     }
     return out;
   }
@@ -402,7 +361,7 @@ class SupabaseStore implements Store {
       paid: Boolean(d.paid),
       image: d.image ?? undefined,
       personName: d.person_name ?? undefined,
-      createdAt: d.created_at,
+      createdAt: d.created_at instanceof Date ? d.created_at.toISOString() : d.created_at,
     };
   }
   private userRow(d: any): User {
@@ -412,7 +371,7 @@ class SupabaseStore implements Store {
       passwordHash: d.password_hash,
       verified: d.verified ?? undefined,
       verifyToken: d.verify_token ?? null,
-      createdAt: d.created_at,
+      createdAt: d.created_at instanceof Date ? d.created_at.toISOString() : d.created_at,
     };
   }
 }
@@ -425,9 +384,9 @@ declare global {
 }
 
 function createStore(): Store {
-  if (supabaseEnabled) {
+  if (databaseEnabled) {
     try {
-      return new SupabaseStore();
+      return new PostgresStore();
     } catch {
       return new MemoryStore();
     }
