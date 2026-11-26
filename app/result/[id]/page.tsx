@@ -24,7 +24,7 @@ export default async function ResultPage({ params }: { params: { id: string } })
   const record = await store.getScan(params.id);
   if (!record) notFound();
 
-  const result = gateResult(record.result, false);
+  const result = gateResult(record.result, true);
 
   return (
     <main className="mx-auto max-w-2xl px-5 pb-10">
@@ -43,7 +43,7 @@ export default async function ResultPage({ params }: { params: { id: string } })
           {result.handedness} hand reading
         </h1>
         <p className="mt-2 text-sm text-white/60">
-          Here are the free highlights. Scan your own palm for a full reading.
+          Scan your own palm for a free reading like this one.
         </p>
       </div>
 

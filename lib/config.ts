@@ -8,6 +8,13 @@ export const config = {
   premiumPriceCents: Number(process.env.PREMIUM_PRICE_CENTS || 500),
   premiumCurrency: (process.env.PREMIUM_CURRENCY || "usd").toLowerCase(),
 
+  // Deterministic CV line detector (palm-line-detector service on Coolify) —
+  // traces Heart/Head/Life lines + a long/short fact per line from the actual
+  // photo, so the LLM's narrative can't drift between scans of the same hand.
+  lineDetectorUrl:
+    process.env.PALM_LINE_DETECTOR_URL ||
+    "http://getg6jsttr3idnfbzh5xftxh.169.58.189.189.sslip.io",
+
   // ONE switch controls everything:
   //   POLAR_LIVE=false (or unset) → TEST mode  (sandbox, fake cards, no real charges)
   //   POLAR_LIVE=true            → REAL mode   (production, real money)

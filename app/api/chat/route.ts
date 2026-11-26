@@ -8,8 +8,8 @@ import { enforceRateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
-// Keeps the paid Gemini chat cheap and abuse-resistant: each owner gets this
-// many astrologer replies per UTC day, then must wait until tomorrow.
+// Free-tier Gemini chat, still abuse-resistant: each owner gets this many
+// astrologer replies per UTC day, then must wait until tomorrow.
 const MAX_CHAT_MESSAGES_PER_DAY = 10;
 
 const BodySchema = z.object({

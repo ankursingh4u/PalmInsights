@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.env.local
+.env
+*.log
+C--Users-ankur-bolddev-palm-palm-app
+newfiles
+supabase/.temp

@@ -139,9 +139,9 @@ Write warm, vivid, specific, shareable interpretations (2-4 sentences each, seco
 
 Output ONLY the requested JSON. Be a strict gatekeeper: it is far better to reject a non-palm than to fabricate a reading.`;
 
-function userPrompt(keys: LineKey[], includeReport: boolean): string {
+function userPrompt(keys: LineKey[], includeReport: boolean, cvFacts = ""): string {
   const names = keys.join(", ");
-  let p = `First decide if this image clearly shows a readable human palm. If not, set isPalm=false, give a short reason, and return an empty lines array. If it IS a clear palm, set isPalm=true and read these lines: ${names}. For each line give a pattern, an integer confidence (0-100), a one-line summary, and a 2-4 bullet interpretation based on what you actually observe in this specific palm.`;
+  let p = `First decide if this image clearly shows a readable human palm. If not, set isPalm=false, give a short reason, and return an empty lines array. If it IS a clear palm, set isPalm=true and read these lines: ${names}. For each line give a pattern, an integer confidence (0-100), a one-line summary, and a 2-4 bullet interpretation based on what you actually observe in this specific palm.${cvFacts}`;
   if (includeReport) {
     p += ` Also produce a premium "report" synthesized from the head, fate, heart and life lines (and overall hand shape) you observe in THIS palm. Audience: Gen-Z (US/EU). Tone: hyped, confident, manifestation / "main-character energy" — about career, money, luck and love (NOT marriage or kids). It must contain:
 - highlights: { archetype (a catchy 2-4 word palm personality type), luckyNumber, luckyColor, luckyDay (a weekday) } — make these feel personal to this palm.
@@ -213,11 +213,12 @@ function parse(raw: string): VisionResult {
   return VisionResultSchema.parse(JSON.parse(text));
 }
 
-async function callAnthropic(model: string, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
+async function callAnthropic(model: string, image: string, keys: LineKey[], report: boolean, cvFacts = ""): Promise<VisionResult> {
   const { mime, base64 } = splitDataUrl(image);
   const res = await anthropic().messages.create({
     model,
     max_tokens: 4096,
+    temperature: 0,
     system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
     output_config: { format: { type: "json_schema", schema: jsonSchema(report) } },
     messages: [
@@ -225,7 +226,7 @@ async function callAnthropic(model: string, image: string, keys: LineKey[], repo
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: mime as "image/jpeg", data: base64 } },
-          { type: "text", text: userPrompt(keys, report) },
+          { type: "text", text: userPrompt(keys, report, cvFacts) },
         ],
       },
     ],
@@ -234,13 +235,14 @@ async function callAnthropic(model: string, image: string, keys: LineKey[], repo
   return parse(block && "text" in block ? block.text : "");
 }
 
-async function callOpenAI(model: string, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
+async function callOpenAI(model: string, image: string, keys: LineKey[], report: boolean, cvFacts = ""): Promise<VisionResult> {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.ai.openaiKey}` },
     body: JSON.stringify({
       model,
       max_tokens: 4096,
+      temperature: 0,
       // Structured Outputs: force the EXACT response shape (otherwise the model
       // invents its own field names and parsing fails → silent fallback).
       response_format: {
@@ -252,7 +254,7 @@ async function callOpenAI(model: string, image: string, keys: LineKey[], report:
         {
           role: "user",
           content: [
-            { type: "text", text: userPrompt(keys, report) },
+            { type: "text", text: userPrompt(keys, report, cvFacts) },
             { type: "image_url", image_url: { url: image.startsWith("data:") ? image : `data:image/jpeg;base64,${image}` } },
           ],
         },
@@ -266,13 +268,14 @@ async function callOpenAI(model: string, image: string, keys: LineKey[], report:
 
 // Meta's Model API Chat Completions endpoint is OpenAI-compatible (same
 // image_url / response_format.json_schema shapes), so this mirrors callOpenAI.
-async function callMuse(model: string, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
+async function callMuse(model: string, image: string, keys: LineKey[], report: boolean, cvFacts = ""): Promise<VisionResult> {
   const res = await fetch("https://api.meta.ai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.ai.museKey}` },
     body: JSON.stringify({
       model,
       max_tokens: 4096,
+      temperature: 0,
       response_format: {
         type: "json_schema",
         json_schema: { name: "palm_reading", strict: true, schema: jsonSchema(report) },
@@ -282,7 +285,7 @@ async function callMuse(model: string, image: string, keys: LineKey[], report: b
         {
           role: "user",
           content: [
-            { type: "text", text: userPrompt(keys, report) },
+            { type: "text", text: userPrompt(keys, report, cvFacts) },
             { type: "image_url", image_url: { url: image.startsWith("data:") ? image : `data:image/jpeg;base64,${image}` } },
           ],
         },
@@ -296,13 +299,14 @@ async function callMuse(model: string, image: string, keys: LineKey[], report: b
 
 // OpenRouter's Chat Completions endpoint is also OpenAI-compatible, proxying
 // to the requested underlying model (e.g. anthropic/claude-haiku-5.5).
-async function callOpenRouter(model: string, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
+async function callOpenRouter(model: string, image: string, keys: LineKey[], report: boolean, cvFacts = ""): Promise<VisionResult> {
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.ai.openrouterKey}` },
     body: JSON.stringify({
       model,
       max_tokens: 4096,
+      temperature: 0,
       response_format: {
         type: "json_schema",
         json_schema: { name: "palm_reading", strict: true, schema: jsonSchema(report) },
@@ -312,7 +316,7 @@ async function callOpenRouter(model: string, image: string, keys: LineKey[], rep
         {
           role: "user",
           content: [
-            { type: "text", text: userPrompt(keys, report) },
+            { type: "text", text: userPrompt(keys, report, cvFacts) },
             { type: "image_url", image_url: { url: image.startsWith("data:") ? image : `data:image/jpeg;base64,${image}` } },
           ],
         },
@@ -324,7 +328,7 @@ async function callOpenRouter(model: string, image: string, keys: LineKey[], rep
   return parse(data.choices?.[0]?.message?.content ?? "");
 }
 
-async function callGeminiOnce(model: string, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
+async function callGeminiOnce(model: string, image: string, keys: LineKey[], report: boolean, cvFacts = ""): Promise<VisionResult> {
   const { mime, base64 } = splitDataUrl(image);
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.ai.geminiKey}`;
   const res = await fetch(url, {
@@ -336,12 +340,12 @@ async function callGeminiOnce(model: string, image: string, keys: LineKey[], rep
         {
           role: "user",
           parts: [
-            { text: userPrompt(keys, report) },
+            { text: userPrompt(keys, report, cvFacts) },
             { inlineData: { mimeType: mime, data: base64 } },
           ],
         },
       ],
-      generationConfig: { responseMimeType: "application/json", responseSchema: forGemini(jsonSchema(report)), maxOutputTokens: 4096 },
+      generationConfig: { responseMimeType: "application/json", responseSchema: forGemini(jsonSchema(report)), maxOutputTokens: 4096, temperature: 0 },
     }),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
@@ -357,11 +361,11 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // This is the ONLY provider tried once the daily paid-tier cap is spent, so
 // without a retry here, that single transient blip turned into a hard
 // user-facing "palm reader is busy" error for the rest of the day.
-async function callGemini(model: string, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
+async function callGemini(model: string, image: string, keys: LineKey[], report: boolean, cvFacts = ""): Promise<VisionResult> {
   let lastErr: unknown;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      return await callGeminiOnce(model, image, keys, report);
+      return await callGeminiOnce(model, image, keys, report, cvFacts);
     } catch (err) {
       lastErr = err;
       const transient = /\b(503|UNAVAILABLE|high demand)\b/i.test((err as Error).message || "");
@@ -438,12 +442,12 @@ export async function detectLineGeometry(image: string): Promise<LinePoints | nu
   }
 }
 
-async function callOne(a: Attempt, image: string, keys: LineKey[], report: boolean): Promise<VisionResult> {
-  if (a.provider === "anthropic") return callAnthropic(a.model, image, keys, report);
-  if (a.provider === "openai") return callOpenAI(a.model, image, keys, report);
-  if (a.provider === "muse") return callMuse(a.model, image, keys, report);
-  if (a.provider === "openrouter") return callOpenRouter(a.model, image, keys, report);
-  return callGemini(a.model, image, keys, report);
+async function callOne(a: Attempt, image: string, keys: LineKey[], report: boolean, cvFacts = ""): Promise<VisionResult> {
+  if (a.provider === "anthropic") return callAnthropic(a.model, image, keys, report, cvFacts);
+  if (a.provider === "openai") return callOpenAI(a.model, image, keys, report, cvFacts);
+  if (a.provider === "muse") return callMuse(a.model, image, keys, report, cvFacts);
+  if (a.provider === "openrouter") return callOpenRouter(a.model, image, keys, report, cvFacts);
+  return callGemini(a.model, image, keys, report, cvFacts);
 }
 
 export interface VisionAnalysis {
@@ -461,14 +465,14 @@ export interface VisionAnalysis {
  */
 export async function analyzePalmImage(
   image: string,
-  opts: { tier: "free" | "paid"; lines: LineKey[]; report?: boolean; allowPaid: boolean }
+  opts: { tier: "free" | "paid"; lines: LineKey[]; report?: boolean; allowPaid: boolean; cvFacts?: string }
 ): Promise<VisionAnalysis | null> {
   if (!aiEnabled || !image) return null;
   const chain = chainFor(opts.tier, opts.allowPaid);
   let lastErr: unknown = null;
   for (const a of chain) {
     try {
-      const result = await callOne(a, image, opts.lines, opts.report ?? false);
+      const result = await callOne(a, image, opts.lines, opts.report ?? false, opts.cvFacts ?? "");
       // Keep only requested lines, clamp confidence.
       result.lines = result.lines
         .filter((l) => opts.lines.includes(l.key))

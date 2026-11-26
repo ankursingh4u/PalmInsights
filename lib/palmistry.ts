@@ -535,7 +535,7 @@ export function applyVisionReading(
  */
 export function applyLineGeometry(
   full: AnalysisResult,
-  geo: Record<LineKey, { x: number; y: number }[]>
+  geo: Partial<Record<LineKey, { x: number; y: number }[]>>
 ): AnalysisResult {
   const lines = full.lines.map((line) => {
     const raw = geo[line.key];

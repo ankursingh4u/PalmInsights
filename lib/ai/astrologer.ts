@@ -1,18 +1,12 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { config, aiEnabled } from "../config";
 import type { AnalysisResult, ChatMessage } from "../types";
 
 // ---------------------------------------------------------------------------
 // "Ask the Astrologer" — a conversational follow-up to a palm reading.
 //
-// The user has already unlocked their Deep Report; here they can ask the
-// astrologer anything about it ("Will I be rich?", "When will I find love?",
-// "Should I take this job?"). Answers are GROUNDED in this specific palm's
-// reading (lines + premium report) so the astrologer feels like it actually
-// remembers their hand — not a generic chatbot.
-//
-// Uses the same tiered, multi-provider fallback chain as palm vision, at the
-// capable ("paid") tier since this is a paid feature. All text — no image.
+// Answers are GROUNDED in this specific palm's reading (lines + report) so
+// the astrologer feels like it actually remembers their hand — not a
+// generic chatbot. Free feature: always the free-tier Gemini model.
 // ---------------------------------------------------------------------------
 
 const SYSTEM = `You are "Aria", the personal astrologer inside PalmInsight — warm, wise, and a little mystical, speaking to a Gen-Z (US/EU) audience. The user has ALREADY had their palm read; their reading is given to you below. Your job is to answer their follow-up questions as if you personally read their palm and remember every line.
@@ -49,60 +43,19 @@ function readingContext(result: AnalysisResult): string {
 }
 
 interface Attempt {
-  provider: "anthropic" | "openai" | "gemini";
+  provider: "gemini";
   model: string;
 }
 
+// Chat is free-tier only — always the free Gemini model, no paid fallback.
 function chain(): Attempt[] {
   const a = config.ai;
-  const all: Attempt[] = [
-    { provider: "gemini", model: a.geminiPro },
-    { provider: "anthropic", model: a.anthropicPro },
-    { provider: "openai", model: a.openaiPro },
-  ];
-  return all.filter(
-    (x) =>
-      (x.provider === "anthropic" && a.anthropicKey) ||
-      (x.provider === "openai" && a.openaiKey) ||
-      (x.provider === "gemini" && a.geminiKey)
-  );
-}
-
-let _anthropic: Anthropic | null = null;
-function anthropic(): Anthropic {
-  if (!_anthropic) _anthropic = new Anthropic({ apiKey: config.ai.anthropicKey });
-  return _anthropic;
+  return a.geminiKey ? [{ provider: "gemini", model: a.geminiCheap }] : [];
 }
 
 /** Cap history so a long conversation can't grow the prompt unbounded. */
 function recentTurns(messages: ChatMessage[], max = 12): ChatMessage[] {
   return messages.slice(-max);
-}
-
-async function callAnthropic(model: string, system: string, messages: ChatMessage[]): Promise<string> {
-  const res = await anthropic().messages.create({
-    model,
-    max_tokens: 600,
-    system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
-  });
-  const block = res.content.find((b) => b.type === "text");
-  return block && "text" in block ? block.text.trim() : "";
-}
-
-async function callOpenAI(model: string, system: string, messages: ChatMessage[]): Promise<string> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.ai.openaiKey}` },
-    body: JSON.stringify({
-      model,
-      max_tokens: 600,
-      messages: [{ role: "system", content: system }, ...messages],
-    }),
-  });
-  if (!res.ok) throw new Error(`OpenAI ${res.status}: ${await res.text()}`);
-  const data = await res.json();
-  return (data.choices?.[0]?.message?.content ?? "").trim();
 }
 
 async function callGemini(model: string, system: string, messages: ChatMessage[]): Promise<string> {
@@ -127,8 +80,6 @@ async function callGemini(model: string, system: string, messages: ChatMessage[]
 }
 
 async function callOne(a: Attempt, system: string, messages: ChatMessage[]): Promise<string> {
-  if (a.provider === "anthropic") return callAnthropic(a.model, system, messages);
-  if (a.provider === "openai") return callOpenAI(a.model, system, messages);
   return callGemini(a.model, system, messages);
 }
 

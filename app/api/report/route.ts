@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { store } from "@/lib/store";
 import { verifyUnlockToken } from "@/lib/token";
-import { gateResult, applyVisionReading } from "@/lib/palmistry";
+import { gateResult, applyVisionReading, applyLineGeometry } from "@/lib/palmistry";
 import { analyzePalmImage } from "@/lib/ai/palmVision";
+import { detectLinesCV, cvFactsPrompt, cvToGeometry } from "@/lib/ai/lineDetector";
 import { clientIp } from "@/lib/ratelimit";
 import { track } from "@/lib/analytics";
 
@@ -11,7 +12,8 @@ export const runtime = "nodejs";
 
 // Paid-tier (best accuracy) palm reads per owner per day; beyond this, scans
 // fall back to the free Gemini tier instead of being blocked or charged more.
-const PAID_SCANS_PER_DAY = 2;
+// Temporarily raised for testing — revisit before real launch.
+const PAID_SCANS_PER_DAY = 20;
 
 const BodySchema = z.object({
   scanId: z.string().min(1),
@@ -50,16 +52,19 @@ export async function POST(req: NextRequest) {
     const allowPaid = paidScansToday < PAID_SCANS_PER_DAY && paidScansTodayByIp < PAID_SCANS_PER_DAY;
     // Paid-tier only — skip the enhance pass entirely once the daily cap is
     // hit, rather than falling back to a cheaper model for it.
+    const cv = allowPaid ? await detectLinesCV(record.image) : null;
     const analysis = allowPaid
       ? await analyzePalmImage(record.image, {
           tier: "paid",
           lines: ["life", "heart", "head", "fate"],
           report: true,
           allowPaid,
+          cvFacts: cvFactsPrompt(cv),
         })
       : null;
     if (analysis?.vision.lines?.length) {
-      const enhanced = applyVisionReading(record.result, analysis.vision);
+      let enhanced = applyVisionReading(record.result, analysis.vision);
+      if (cv) enhanced = applyLineGeometry(enhanced, cvToGeometry(cv));
       enhanced.aiTier = analysis.usedPaid ? "paid" : "free";
       record.result = enhanced;
       await store.saveScan(record); // cache so we don't re-call the model

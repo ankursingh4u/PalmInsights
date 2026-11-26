@@ -3,6 +3,7 @@ import { z } from "zod";
 import crypto from "crypto";
 import { analyzePalm, gateResult, applyVisionReading, applyLineGeometry } from "@/lib/palmistry";
 import { analyzePalmImage, detectLineGeometry } from "@/lib/ai/palmVision";
+import { detectLinesCV, cvFactsPrompt, cvToGeometry } from "@/lib/ai/lineDetector";
 import { aiEnabled } from "@/lib/config";
 import { store } from "@/lib/store";
 import { getOwnerKey, getSessionUserId } from "@/lib/auth";
@@ -16,7 +17,8 @@ const ANON_FREE_READINGS = 1;
 
 // Paid-tier (best accuracy) palm reads per owner per day; beyond this, scans
 // fall back to the free Gemini tier instead of being blocked or charged more.
-const PAID_SCANS_PER_DAY = 2;
+// Temporarily raised for testing — revisit before real launch.
+const PAID_SCANS_PER_DAY = 20;
 
 export const runtime = "nodejs";
 
@@ -130,10 +132,17 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const [analysis, geo] = await Promise.all([
-      analyzePalmImage(image, { tier: "paid", lines: ["life", "heart", "head", "fate"], report: true, allowPaid }),
-      detectLineGeometry(image),
-    ]);
+    // Deterministic CV pass first (Heart/Head/Life trace + long/short fact) so
+    // the LLM's narrative is grounded in the actual photo, not free-styled.
+    const [cv, geo] = await Promise.all([detectLinesCV(image), detectLineGeometry(image)]);
+
+    const analysis = await analyzePalmImage(image, {
+      tier: "paid",
+      lines: ["life", "heart", "head", "fate"],
+      report: true,
+      allowPaid,
+      cvFacts: cvFactsPrompt(cv),
+    });
 
     // AI unavailable (outage / no credit). Never fabricate a reading.
     if (!analysis) {
@@ -155,7 +164,8 @@ export async function POST(req: NextRequest) {
     }
 
     let full = applyVisionReading(geometry, vision);
-    if (geo) full = applyLineGeometry(full, geo); // exact AI-traced overlay
+    if (geo) full = applyLineGeometry(full, geo); // exact AI-traced overlay (fate line)
+    if (cv) full = applyLineGeometry(full, cvToGeometry(cv)); // deterministic CV overlay wins for heart/head/life
     full.aiTier = usedPaid ? "paid" : "free";
     await store.saveScan({ id, ownerKey, result: full, paid: true, image, personName: name, createdAt });
     await track("scan_created", { ownerKey, scanId: id });
