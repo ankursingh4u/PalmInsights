@@ -58,6 +58,11 @@ function recentTurns(messages: ChatMessage[], max = 12): ChatMessage[] {
   return messages.slice(-max);
 }
 
+// Matches the timeout budget used elsewhere for AI calls (lineDetector.ts,
+// mobile lib/api.ts) — without this, an unresponsive Gemini call hangs the
+// request indefinitely instead of failing into the chain's error path.
+const CHAT_TIMEOUT_MS = 20_000;
+
 async function callGemini(model: string, system: string, messages: ChatMessage[]): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.ai.geminiKey}`;
   const res = await fetch(url, {
@@ -71,6 +76,7 @@ async function callGemini(model: string, system: string, messages: ChatMessage[]
       })),
       generationConfig: { maxOutputTokens: 600 },
     }),
+    signal: AbortSignal.timeout(CHAT_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
   const data = await res.json();
@@ -79,8 +85,26 @@ async function callGemini(model: string, system: string, messages: ChatMessage[]
   ).trim();
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Gemini occasionally returns 503 UNAVAILABLE ("high demand... usually
+// temporary") — a transient overload on Google's side, not a real failure.
+// Chat has no other provider to fall back to, so without a retry here a
+// single transient blip becomes a hard "astrologer is resting" error.
+// Mirrors the same retry already used for vision calls in palmVision.ts.
 async function callOne(a: Attempt, system: string, messages: ChatMessage[]): Promise<string> {
-  return callGemini(a.model, system, messages);
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await callGemini(a.model, system, messages);
+    } catch (err) {
+      lastErr = err;
+      const transient = /\b(503|UNAVAILABLE|high demand)\b/i.test((err as Error).message || "");
+      if (!transient || attempt === 2) throw err;
+      await sleep(600 * (attempt + 1));
+    }
+  }
+  throw lastErr;
 }
 
 /**

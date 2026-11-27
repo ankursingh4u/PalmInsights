@@ -230,7 +230,7 @@ async function callAnthropic(model: string, image: string, keys: LineKey[], repo
         ],
       },
     ],
-  } as Anthropic.Messages.MessageCreateParamsNonStreaming);
+  } as Anthropic.Messages.MessageCreateParamsNonStreaming, { timeout: 20_000 });
   const block = res.content.find((b) => b.type === "text");
   return parse(block && "text" in block ? block.text : "");
 }
@@ -260,6 +260,7 @@ async function callOpenAI(model: string, image: string, keys: LineKey[], report:
         },
       ],
     }),
+    signal: AbortSignal.timeout(20_000),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}: ${await res.text()}`);
   const data = await res.json();
@@ -291,6 +292,7 @@ async function callMuse(model: string, image: string, keys: LineKey[], report: b
         },
       ],
     }),
+    signal: AbortSignal.timeout(20_000),
   });
   if (!res.ok) throw new Error(`Muse ${res.status}: ${await res.text()}`);
   const data = await res.json();
@@ -322,6 +324,7 @@ async function callOpenRouter(model: string, image: string, keys: LineKey[], rep
         },
       ],
     }),
+    signal: AbortSignal.timeout(20_000),
   });
   if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${await res.text()}`);
   const data = await res.json();
@@ -347,6 +350,9 @@ async function callGeminiOnce(model: string, image: string, keys: LineKey[], rep
       ],
       generationConfig: { responseMimeType: "application/json", responseSchema: forGemini(jsonSchema(report)), maxOutputTokens: 4096, temperature: 0 },
     }),
+    // Without this, a hung Gemini response never throws, so the transient-503
+    // retry below never gets a chance to fire — it just blocks indefinitely.
+    signal: AbortSignal.timeout(20_000),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
   const data = await res.json();
