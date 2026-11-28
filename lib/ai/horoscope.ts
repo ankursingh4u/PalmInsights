@@ -44,7 +44,7 @@ function parse(raw: string): DailyGuidance {
 }
 
 interface Attempt {
-  provider: "gemini" | "openai" | "anthropic";
+  provider: "gemini" | "openai" | "anthropic" | "openrouter";
   model: string;
 }
 
@@ -54,14 +54,21 @@ function chain(): Attempt[] {
     { provider: "gemini", model: a.geminiCheap },
     { provider: "openai", model: a.openaiCheap },
     { provider: "anthropic", model: a.anthropicCheap },
+    { provider: "openrouter", model: a.openrouterChatModel },
   ];
   return all.filter(
     (x) =>
       (x.provider === "anthropic" && a.anthropicKey) ||
       (x.provider === "openai" && a.openaiKey) ||
-      (x.provider === "gemini" && a.geminiKey)
+      (x.provider === "gemini" && a.geminiKey) ||
+      (x.provider === "openrouter" && a.openrouterKey)
   );
 }
+
+// Matches the timeout budget used elsewhere for AI calls — without this, an
+// unresponsive provider call hangs the cron request indefinitely instead of
+// failing into the next provider in the chain.
+const HOROSCOPE_TIMEOUT_MS = 20_000;
 
 let _anthropic: Anthropic | null = null;
 function anthropic(): Anthropic {
@@ -82,6 +89,7 @@ async function callOpenAI(model: string, lines: string, dateStr: string): Promis
         { role: "user", content: userPrompt(lines, dateStr) },
       ],
     }),
+    signal: AbortSignal.timeout(HOROSCOPE_TIMEOUT_MS),
   });
   if (!r.ok) throw new Error(`OpenAI ${r.status}: ${await r.text()}`);
   const d = await r.json();
@@ -95,7 +103,7 @@ async function callAnthropic(model: string, lines: string, dateStr: string): Pro
     system: SYSTEM,
     output_config: { format: { type: "json_schema", schema: SCHEMA } },
     messages: [{ role: "user", content: userPrompt(lines, dateStr) }],
-  } as Anthropic.Messages.MessageCreateParamsNonStreaming);
+  } as Anthropic.Messages.MessageCreateParamsNonStreaming, { timeout: HOROSCOPE_TIMEOUT_MS });
   const block = res.content.find((b) => b.type === "text");
   return parse(block && "text" in block ? block.text : "");
 }
@@ -110,6 +118,7 @@ async function callGemini(model: string, lines: string, dateStr: string): Promis
       contents: [{ role: "user", parts: [{ text: userPrompt(lines, dateStr) }] }],
       generationConfig: { responseMimeType: "application/json", responseSchema: forGemini(SCHEMA), maxOutputTokens: 500 },
     }),
+    signal: AbortSignal.timeout(HOROSCOPE_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
   const data = await res.json();
@@ -117,9 +126,30 @@ async function callGemini(model: string, lines: string, dateStr: string): Promis
   return parse(text);
 }
 
+async function callOpenRouter(model: string, lines: string, dateStr: string): Promise<DailyGuidance> {
+  const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.ai.openrouterKey}` },
+    body: JSON.stringify({
+      model,
+      max_tokens: 500,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: SYSTEM },
+        { role: "user", content: userPrompt(lines, dateStr) },
+      ],
+    }),
+    signal: AbortSignal.timeout(HOROSCOPE_TIMEOUT_MS),
+  });
+  if (!r.ok) throw new Error(`OpenRouter ${r.status}: ${await r.text()}`);
+  const d = await r.json();
+  return parse(d.choices?.[0]?.message?.content ?? "");
+}
+
 async function callOne(a: Attempt, lines: string, dateStr: string): Promise<DailyGuidance> {
   if (a.provider === "anthropic") return callAnthropic(a.model, lines, dateStr);
   if (a.provider === "openai") return callOpenAI(a.model, lines, dateStr);
+  if (a.provider === "openrouter") return callOpenRouter(a.model, lines, dateStr);
   return callGemini(a.model, lines, dateStr);
 }
 

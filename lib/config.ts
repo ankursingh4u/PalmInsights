@@ -73,6 +73,11 @@ export const config = {
     museModel: process.env.AI_MUSE_MODEL || "muse-ember-1.0",
     // Paid, rate-limited (2/day) palm-vision tier — best accuracy per dollar.
     openrouterModel: process.env.AI_OPENROUTER_MODEL || "anthropic/claude-haiku-5.5",
+    // Chat ("Ask the Astrologer", 10 msgs/day) — text-only, so the cheapest
+    // viable OpenRouter model works fine; widely-mirrored across many
+    // upstream providers on OpenRouter (unlike a single-vendor free-tier key),
+    // so one provider's outage doesn't take chat down.
+    openrouterChatModel: process.env.AI_OPENROUTER_CHAT_MODEL || "meta-llama/llama-3.1-8b-instruct",
   },
 
   unlockSecret: process.env.UNLOCK_TOKEN_SECRET || "dev-only-change-me",
@@ -102,7 +107,11 @@ export const databaseEnabled = Boolean(config.database.url);
 
 /** True when at least one AI vision provider is configured. */
 export const aiEnabled = Boolean(
-  config.ai.anthropicKey || config.ai.openaiKey || config.ai.geminiKey || config.ai.museKey
+  config.ai.anthropicKey ||
+    config.ai.openaiKey ||
+    config.ai.geminiKey ||
+    config.ai.museKey ||
+    config.ai.openrouterKey
 );
 
 export function priceLabel(): string {

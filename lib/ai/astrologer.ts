@@ -6,7 +6,10 @@ import type { AnalysisResult, ChatMessage } from "../types";
 //
 // Answers are GROUNDED in this specific palm's reading (lines + report) so
 // the astrologer feels like it actually remembers their hand — not a
-// generic chatbot. Free feature: always the free-tier Gemini model.
+// generic chatbot. Free-to-the-user feature (10 msgs/day), backed by
+// OpenRouter's cheapest viable text model rather than a free-tier key — a
+// dedicated Gemini free-tier key for this turned out unusable in practice
+// (hangs on any system-instructed/multi-turn request on the key we had).
 // ---------------------------------------------------------------------------
 
 const SYSTEM = `You are "Aria", the personal astrologer inside PalmInsight — warm, wise, and a little mystical, speaking to a Gen-Z (US/EU) audience. The user has ALREADY had their palm read; their reading is given to you below. Your job is to answer their follow-up questions as if you personally read their palm and remember every line.
@@ -43,63 +46,72 @@ function readingContext(result: AnalysisResult): string {
 }
 
 interface Attempt {
-  provider: "gemini";
+  provider: "openrouter";
   model: string;
 }
 
-// Chat is free-tier only — always the free Gemini model, no paid fallback.
+// Chat is OpenRouter-only — one cheap text model, no fallback needed since
+// OpenRouter itself routes across multiple upstream providers for a
+// widely-mirrored model like this one.
 function chain(): Attempt[] {
   const a = config.ai;
-  return a.geminiKey ? [{ provider: "gemini", model: a.geminiCheap }] : [];
+  return a.openrouterKey ? [{ provider: "openrouter", model: a.openrouterChatModel }] : [];
 }
 
-/** Cap history so a long conversation can't grow the prompt unbounded. */
-function recentTurns(messages: ChatMessage[], max = 12): ChatMessage[] {
-  return messages.slice(-max);
+// Caps bound cost/abuse per message, independent of the 10/day count — so a
+// single "heavy" ask (e.g. pasting in a wall of text to get free document
+// processing) can't blow past what a normal short follow-up question costs.
+// Message length itself is enforced in the route's zod schema (max 2000
+// chars); this trims how much of that — plus prior turns — actually gets
+// sent as context, since cost scales with total input + output tokens, not
+// just the latest message.
+const MAX_CONTEXT_CHARS_PER_TURN = 500;
+const MAX_HISTORY_TURNS = 6;
+const MAX_REPLY_TOKENS = 400;
+
+/** Cap history + per-turn size so a long/heavy conversation can't blow the token budget. */
+function recentTurns(messages: ChatMessage[], max = MAX_HISTORY_TURNS): ChatMessage[] {
+  return messages.slice(-max).map((m) => ({ ...m, content: m.content.slice(0, MAX_CONTEXT_CHARS_PER_TURN) }));
 }
 
 // Matches the timeout budget used elsewhere for AI calls (lineDetector.ts,
-// mobile lib/api.ts) — without this, an unresponsive Gemini call hangs the
+// mobile lib/api.ts) — without this, an unresponsive provider call hangs the
 // request indefinitely instead of failing into the chain's error path.
 const CHAT_TIMEOUT_MS = 20_000;
 
-async function callGemini(model: string, system: string, messages: ChatMessage[]): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.ai.geminiKey}`;
-  const res = await fetch(url, {
+async function callOpenRouter(model: string, system: string, messages: ChatMessage[]): Promise<string> {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${config.ai.openrouterKey}` },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents: messages.map((m) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }],
-      })),
-      generationConfig: { maxOutputTokens: 600 },
+      model,
+      max_tokens: MAX_REPLY_TOKENS,
+      messages: [
+        { role: "system", content: system },
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+      ],
     }),
     signal: AbortSignal.timeout(CHAT_TIMEOUT_MS),
   });
-  if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
+  if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${await res.text()}`);
   const data = await res.json();
-  return (
-    data.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text).join("") ?? ""
-  ).trim();
+  return (data.choices?.[0]?.message?.content ?? "").trim();
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// Gemini occasionally returns 503 UNAVAILABLE ("high demand... usually
-// temporary") — a transient overload on Google's side, not a real failure.
-// Chat has no other provider to fall back to, so without a retry here a
-// single transient blip becomes a hard "astrologer is resting" error.
-// Mirrors the same retry already used for vision calls in palmVision.ts.
+// OpenRouter/upstream providers occasionally return 429/503 under transient
+// overload — not a real failure. Chat has no fallback provider, so without a
+// retry here a single transient blip becomes a hard "astrologer is resting"
+// error. Mirrors the same retry already used for vision calls in palmVision.ts.
 async function callOne(a: Attempt, system: string, messages: ChatMessage[]): Promise<string> {
   let lastErr: unknown;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      return await callGemini(a.model, system, messages);
+      return await callOpenRouter(a.model, system, messages);
     } catch (err) {
       lastErr = err;
-      const transient = /\b(503|UNAVAILABLE|high demand)\b/i.test((err as Error).message || "");
+      const transient = /\b(429|503|UNAVAILABLE|rate.?limit|high demand)\b/i.test((err as Error).message || "");
       if (!transient || attempt === 2) throw err;
       await sleep(600 * (attempt + 1));
     }
