@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { store } from "@/lib/store";
 import { verifyUnlockToken } from "@/lib/token";
-import { gateResult, applyVisionReading, applyLineGeometry } from "@/lib/palmistry";
+import { gateResult, applyVisionReading, applyLineGeometry, deriveLuckyHighlights } from "@/lib/palmistry";
 import { analyzePalmImage } from "@/lib/ai/palmVision";
 import { detectLinesCV, cvFactsPrompt, cvToGeometry } from "@/lib/ai/lineDetector";
 import { clientIp } from "@/lib/ratelimit";
@@ -66,6 +66,9 @@ export async function POST(req: NextRequest) {
       let enhanced = applyVisionReading(record.result, analysis.vision);
       if (cv) enhanced = applyLineGeometry(enhanced, cvToGeometry(cv));
       enhanced.aiTier = analysis.usedPaid ? "paid" : "free";
+      if (enhanced.report && record.image) {
+        Object.assign(enhanced.report.highlights, deriveLuckyHighlights(cv, record.image));
+      }
       record.result = enhanced;
       await store.saveScan(record); // cache so we don't re-call the model
       if (analysis.usedPaid) await track("paid_scan_ip", { ownerKey: ip, scanId: record.id });

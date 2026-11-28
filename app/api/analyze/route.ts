@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import crypto from "crypto";
-import { analyzePalm, gateResult, applyVisionReading, applyLineGeometry } from "@/lib/palmistry";
+import { analyzePalm, gateResult, applyVisionReading, applyLineGeometry, deriveLuckyHighlights } from "@/lib/palmistry";
 import { analyzePalmImage, detectLineGeometry } from "@/lib/ai/palmVision";
 import { detectLinesCV, cvFactsPrompt, cvToGeometry } from "@/lib/ai/lineDetector";
 import { aiEnabled } from "@/lib/config";
@@ -167,6 +167,11 @@ export async function POST(req: NextRequest) {
     if (geo) full = applyLineGeometry(full, geo); // exact AI-traced overlay (fate line)
     if (cv) full = applyLineGeometry(full, cvToGeometry(cv)); // deterministic CV overlay wins for heart/head/life
     full.aiTier = usedPaid ? "paid" : "free";
+    // "Lucky" fields have no real signal to ground an LLM guess in, so at
+    // temperature:0 the model just returns the same default for every photo
+    // (observed: always "Thursday"/"7"). Derive them from this photo's own
+    // CV trace instead — genuinely varies per hand, same hand stays stable.
+    if (full.report) Object.assign(full.report.highlights, deriveLuckyHighlights(cv, image));
     await store.saveScan({ id, ownerKey, result: full, paid: true, image, personName: name, createdAt });
     await track("scan_created", { ownerKey, scanId: id });
     if (usedPaid) await track("paid_scan_ip", { ownerKey: ip, scanId: id });

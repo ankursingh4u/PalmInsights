@@ -546,6 +546,46 @@ export function applyLineGeometry(
   return { ...full, lines };
 }
 
+const LUCKY_NUMBERS = ["3", "7", "9", "11", "13", "17", "21", "22"];
+const LUCKY_COLORS = [
+  "Emerald Green", "Sapphire Blue", "Crimson Red", "Royal Violet", "Sunset Orange",
+  "Golden Yellow", "Rose Pink", "Midnight Teal", "Lavender", "Burnt Amber",
+];
+const LUCKY_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+/** FNV-1a over an arbitrary string — same hashing approach as hashLandmarks. */
+function hashString(s: string): number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+
+/**
+ * "Lucky number/color/day" have no real palmistry meaning to ground them in,
+ * so an LLM asked to "pick one" at temperature:0 just returns its single
+ * highest-probability default every time (observed: always "Thursday" / "7"
+ * regardless of the actual hand). Deriving them from a hash of the real,
+ * photo-specific CV trace instead keeps them genuinely tied to THIS photo —
+ * same photo always reproduces the same values, a different photo (different
+ * traced geometry) reliably produces different ones — without depending on
+ * LLM creative-writing variance for fields that were never going to have real
+ * signal behind them anyway.
+ */
+export function deriveLuckyHighlights(
+  cv: Partial<Record<"heart" | "head" | "life", { points: { x: number; y: number }[]; lengthClass: string }>> | null,
+  image: string
+): { luckyNumber: string; luckyColor: string; luckyDay: string } {
+  const seedSrc = cv ? JSON.stringify(cv) : image;
+  const seed = hashString(seedSrc);
+  return {
+    luckyNumber: LUCKY_NUMBERS[Math.floor(rand(seed, 11) * LUCKY_NUMBERS.length)],
+    luckyColor: LUCKY_COLORS[Math.floor(rand(seed, 13) * LUCKY_COLORS.length)],
+    luckyDay: LUCKY_DAYS[Math.floor(rand(seed, 17) * LUCKY_DAYS.length)],
+  };
+}
+
 /**
  * Produce the client-facing result. When `unlocked` is false, premium lines
  * are reduced to title-only previews and the report is stripped.
