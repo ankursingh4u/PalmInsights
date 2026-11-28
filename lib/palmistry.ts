@@ -565,33 +565,25 @@ function hashString(s: string): number {
 /**
  * "Lucky number/color/day" have no real palmistry meaning to ground them in,
  * so an LLM asked to "pick one" at temperature:0 just returns its single
- * highest-probability default every time (observed: always "Thursday" / "7"
- * regardless of the actual hand). Deriving them from this photo's CV trace
- * instead keeps them genuinely tied to the actual hand.
+ * highest-probability default every time (observed live: always "Thursday" /
+ * "7" regardless of the actual hand).
  *
- * Seeded from `lengthClass` (short/long per line) plus each line's traced
- * point count bucketed in groups of 15 — not the raw points themselves,
- * which vary too much between two separate photos of the SAME hand (angle,
- * lighting, crop) to hash reproducibly. Point count also shifts a little
- * between retakes (observed: within about +/-7), but a bucket width of 15
- * absorbs that while still distinguishing hands with genuinely
- * different line length/complexity — lengthClass alone only gave 8 possible
- * buckets total, too few to reliably separate real, different hands.
+ * Tried deriving these from the photo's CV trace (line lengthClass / traced
+ * point count) first, but two independently-taken photos of the same real
+ * hand vary more than that tolerates — different zoom, pose, distance shift
+ * the trace enough to flip buckets, so the "same hand" case broke instead
+ * (observed live). The right identity to key off is WHO the palm belongs to,
+ * not the photo's pixels: ownerKey + the declared personName (the same field
+ * added so a friend's scan doesn't collide with the account owner's own).
+ * Same person -> identical seed every time, no photo-noise dependency at
+ * all; a different person (different account, or a different declared name
+ * under one account) -> a different seed.
  */
 export function deriveLuckyHighlights(
-  cv: Partial<Record<"heart" | "head" | "life", { lengthClass: string; points: unknown[] }>> | null,
-  image: string
+  ownerKey: string,
+  personName?: string
 ): { luckyNumber: string; luckyColor: string; luckyDay: string } {
-  const seedSrc = cv
-    ? (["heart", "head", "life"] as const)
-        .map((k) => {
-          const line = cv[k];
-          const bucket = line ? Math.floor((line.points?.length ?? 0) / 15) : "?";
-          return `${line?.lengthClass ?? "?"}${bucket}`;
-        })
-        .join("-")
-    : image;
-  const seed = hashString(seedSrc);
+  const seed = hashString(`${ownerKey}|${personName || "self"}`);
   return {
     luckyNumber: LUCKY_NUMBERS[Math.floor(rand(seed, 11) * LUCKY_NUMBERS.length)],
     luckyColor: LUCKY_COLORS[Math.floor(rand(seed, 13) * LUCKY_COLORS.length)],

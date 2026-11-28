@@ -169,9 +169,9 @@ export async function POST(req: NextRequest) {
     full.aiTier = usedPaid ? "paid" : "free";
     // "Lucky" fields have no real signal to ground an LLM guess in, so at
     // temperature:0 the model just returns the same default for every photo
-    // (observed: always "Thursday"/"7"). Derive them from this photo's own
-    // CV trace instead — genuinely varies per hand, same hand stays stable.
-    if (full.report) Object.assign(full.report.highlights, deriveLuckyHighlights(cv, image));
+    // (observed: always "Thursday"/"7"). Derive them from who this reading
+    // is for instead — stable per person, varies across different people.
+    if (full.report) Object.assign(full.report.highlights, deriveLuckyHighlights(ownerKey, name));
     await store.saveScan({ id, ownerKey, result: full, paid: true, image, personName: name, createdAt });
     await track("scan_created", { ownerKey, scanId: id });
     if (usedPaid) await track("paid_scan_ip", { ownerKey: ip, scanId: id });

@@ -66,8 +66,8 @@ export async function POST(req: NextRequest) {
       let enhanced = applyVisionReading(record.result, analysis.vision);
       if (cv) enhanced = applyLineGeometry(enhanced, cvToGeometry(cv));
       enhanced.aiTier = analysis.usedPaid ? "paid" : "free";
-      if (enhanced.report && record.image) {
-        Object.assign(enhanced.report.highlights, deriveLuckyHighlights(cv, record.image));
+      if (enhanced.report) {
+        Object.assign(enhanced.report.highlights, deriveLuckyHighlights(record.ownerKey, record.personName));
       }
       record.result = enhanced;
       await store.saveScan(record); // cache so we don't re-call the model
