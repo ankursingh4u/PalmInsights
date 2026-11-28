@@ -566,18 +566,25 @@ function hashString(s: string): number {
  * "Lucky number/color/day" have no real palmistry meaning to ground them in,
  * so an LLM asked to "pick one" at temperature:0 just returns its single
  * highest-probability default every time (observed: always "Thursday" / "7"
- * regardless of the actual hand). Deriving them from a hash of the real,
- * photo-specific CV trace instead keeps them genuinely tied to THIS photo —
- * same photo always reproduces the same values, a different photo (different
- * traced geometry) reliably produces different ones — without depending on
- * LLM creative-writing variance for fields that were never going to have real
- * signal behind them anyway.
+ * regardless of the actual hand). Deriving them from this photo's CV trace
+ * instead keeps them genuinely tied to the actual hand.
+ *
+ * Seeded from `lengthClass` (short/long per line) rather than the raw traced
+ * points: two separate photos of the SAME physical hand produce slightly
+ * different point coordinates (angle, lighting, crop), which would hash to
+ * different values even though it's the same hand — lengthClass is the same
+ * quantized, robust-to-retake signal already used to ground the line
+ * pattern/summary text elsewhere, so it reproduces consistently across
+ * repeat photos of one hand while still varying across genuinely different
+ * hands (short/long combination across 3 lines = 8 distinct buckets).
  */
 export function deriveLuckyHighlights(
-  cv: Partial<Record<"heart" | "head" | "life", { points: { x: number; y: number }[]; lengthClass: string }>> | null,
+  cv: Partial<Record<"heart" | "head" | "life", { lengthClass: string }>> | null,
   image: string
 ): { luckyNumber: string; luckyColor: string; luckyDay: string } {
-  const seedSrc = cv ? JSON.stringify(cv) : image;
+  const seedSrc = cv
+    ? ["heart", "head", "life"].map((k) => cv[k as "heart" | "head" | "life"]?.lengthClass ?? "?").join("-")
+    : image;
   const seed = hashString(seedSrc);
   return {
     luckyNumber: LUCKY_NUMBERS[Math.floor(rand(seed, 11) * LUCKY_NUMBERS.length)],
