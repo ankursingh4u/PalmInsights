@@ -569,21 +569,27 @@ function hashString(s: string): number {
  * regardless of the actual hand). Deriving them from this photo's CV trace
  * instead keeps them genuinely tied to the actual hand.
  *
- * Seeded from `lengthClass` (short/long per line) rather than the raw traced
- * points: two separate photos of the SAME physical hand produce slightly
- * different point coordinates (angle, lighting, crop), which would hash to
- * different values even though it's the same hand — lengthClass is the same
- * quantized, robust-to-retake signal already used to ground the line
- * pattern/summary text elsewhere, so it reproduces consistently across
- * repeat photos of one hand while still varying across genuinely different
- * hands (short/long combination across 3 lines = 8 distinct buckets).
+ * Seeded from `lengthClass` (short/long per line) plus each line's traced
+ * point count bucketed in groups of 15 — not the raw points themselves,
+ * which vary too much between two separate photos of the SAME hand (angle,
+ * lighting, crop) to hash reproducibly. Point count also shifts a little
+ * between retakes (observed: within about +/-7), but a bucket width of 15
+ * absorbs that while still distinguishing hands with genuinely
+ * different line length/complexity — lengthClass alone only gave 8 possible
+ * buckets total, too few to reliably separate real, different hands.
  */
 export function deriveLuckyHighlights(
-  cv: Partial<Record<"heart" | "head" | "life", { lengthClass: string }>> | null,
+  cv: Partial<Record<"heart" | "head" | "life", { lengthClass: string; points: unknown[] }>> | null,
   image: string
 ): { luckyNumber: string; luckyColor: string; luckyDay: string } {
   const seedSrc = cv
-    ? ["heart", "head", "life"].map((k) => cv[k as "heart" | "head" | "life"]?.lengthClass ?? "?").join("-")
+    ? (["heart", "head", "life"] as const)
+        .map((k) => {
+          const line = cv[k];
+          const bucket = line ? Math.floor((line.points?.length ?? 0) / 15) : "?";
+          return `${line?.lengthClass ?? "?"}${bucket}`;
+        })
+        .join("-")
     : image;
   const seed = hashString(seedSrc);
   return {
