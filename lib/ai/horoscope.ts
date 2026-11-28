@@ -133,7 +133,11 @@ async function callOpenRouter(model: string, lines: string, dateStr: string): Pr
     body: JSON.stringify({
       model,
       max_tokens: 500,
-      response_format: { type: "json_object" },
+      // json_object mode only guarantees valid JSON, not a specific shape —
+      // a small model will invent its own field names under it (observed:
+      // completely different keys on every call). strict json_schema forces
+      // the exact DailyGuidance shape the client actually parses.
+      response_format: { type: "json_schema", json_schema: { name: "daily", strict: true, schema: SCHEMA } },
       messages: [
         { role: "system", content: SYSTEM },
         { role: "user", content: userPrompt(lines, dateStr) },
